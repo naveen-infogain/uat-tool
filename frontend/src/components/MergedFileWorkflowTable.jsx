@@ -117,7 +117,7 @@ const ActionCell = ({ file, role, onAction }) => {
     case 'sas_uploaded':
       return <button className="act-btn primary" onClick={() => onAction(file, 'compare')}>Run Validation</button>;
     case 'compared':
-      return <button className="act-btn primary" onClick={() => onAction(file, 'view_deviations')}>Review Metrics</button>;
+      return <button className="act-btn primary" onClick={() => onAction(file, 'view_deviations')}>Review Validation</button>;
     case 'uat_done':
       return <span className="act-done-badge">✓ UAT Done</span>;
     case 'issue_reported':

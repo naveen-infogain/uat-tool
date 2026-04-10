@@ -37,8 +37,8 @@ export const DeviationModal = ({ file, onConfirm, onReportIssue, onClose }) => {
       <div className="deviation-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
 
-        <h2 className="modal-title">Comparison Results</h2>
-        <p className="modal-subtitle"><strong>{file.fileName}</strong> — Review deviations below and confirm if results are acceptable.</p>
+        <h2 className="modal-title">Review Validation Results</h2>
+        <p className="modal-subtitle"><strong>{file.fileName}</strong> — Review the comparison results below. Approve to mark UAT done, or Reject to report an issue back to the developer.</p>
 
         {/* Summary */}
         <h3 className="section-heading">Summary</h3>
@@ -97,11 +97,14 @@ export const DeviationModal = ({ file, onConfirm, onReportIssue, onClose }) => {
         )}
 
         <div className="confirm-actions">
+          <button className="btn-cancel" onClick={onClose}>
+            Cancel
+          </button>
           <button className="btn-danger-outline" onClick={onReportIssue}>
-            Report Issue
+            Reject
           </button>
           <button className="btn-confirm" onClick={onConfirm}>
-            Confirm UAT &amp; Mark Done
+            Approve
           </button>
         </div>
       </div>
