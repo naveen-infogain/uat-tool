@@ -149,8 +149,8 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
       case 'compare':          return handleCompare(file);
       case 'upload_pyspark':   return setUploadModal({ file, type: 'pyspark' });
       case 'upload_sas':       return setUploadModal({ file, type: 'sas' });
-      case 'view_sas_queries': return setSasQueriesFile(file);
-      case 'view_sql':         return setSasQueriesFile(file);
+      case 'view_sas_queries': return handleViewSql(file);
+      case 'view_sql':         return handleViewSql(file);
       case 'view_deviations':  return setDeviationFile(file);
       case 'view_issue':       return setIssueViewText(file.issueComment);
       default: break;
@@ -193,6 +193,32 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
     } finally {
       setComparing(false);
     }
+  };
+
+  const handleViewSql = async (file) => {
+    // Already have SQL in local state — show immediately
+    if (file.pysparkSqlQuery) {
+      setSasQueriesFile(file);
+      return;
+    }
+    // Fetch from DB using the upload record
+    if (file.pysparkUploadId) {
+      try {
+        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+        const resp = await fetch(`${API_BASE}/upload/${file.pysparkUploadId}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const sqlQuery = data.sql_query || null;
+          onUpdateFile(file.id, { pysparkSqlQuery: sqlQuery });
+          setSasQueriesFile({ ...file, pysparkSqlQuery: sqlQuery });
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to fetch SQL from DB:', e);
+      }
+    }
+    // Show modal anyway — will display "No SQL query" message
+    setSasQueriesFile(file);
   };
 
   const handleUploadDone = (uploadedFile, type) => {
