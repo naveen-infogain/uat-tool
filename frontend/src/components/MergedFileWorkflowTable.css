@@ -1,0 +1,498 @@
+.merged-file-workflow-wrap {
+  margin: 20px 28px 40px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+/* Toolbar above table */
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.table-count {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.add-files-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-files-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Scrollable table wrapper */
+.table-scroll-wrap {
+  overflow-x: auto;
+}
+
+.merged-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  min-width: 1100px;
+}
+
+.merged-table thead tr {
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.merged-table th {
+  padding: 13px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.07em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.th-select {
+  width: 90px;
+}
+
+/* Row styles */
+.merged-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+
+.merged-row:hover {
+  background: #f8fafc;
+}
+
+.merged-row td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.row-na {
+  opacity: 0.5;
+}
+
+.row-done {
+  background: #f0fdf4;
+}
+
+.row-done:hover {
+  background: #dcfce7;
+}
+
+/* Cell widths */
+.dept-cell {
+  font-weight: 600;
+  color: #0f172a;
+  min-width: 120px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bu-cell {
+  min-width: 110px;
+  max-width: 140px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-cell {
+  min-width: 80px;
+  max-width: 110px;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.uat-ready-cell {
+  min-width: 80px;
+  text-align: center;
+}
+
+.badge-uat-yes {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-uat-no {
+  color: #cbd5e1;
+  font-size: 13px;
+}
+
+.savepath-cell {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: #64748b;
+  min-width: 140px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filename-cell {
+  min-width: 200px;
+  max-width: 260px;
+  color: #1e293b;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filepath-cell {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: #64748b;
+  min-width: 200px;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Step flow (status column) ───────────────────────────────────────── */
+.status-td {
+  min-width: 300px;
+}
+
+.step-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: nowrap;
+  position: relative;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  min-width: 16px;
+  max-width: 32px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.step-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.step-icon.done {
+  background: #16a34a;
+}
+
+.step-icon.done svg {
+  width: 14px;
+  height: 14px;
+}
+
+.step-icon.active {
+  border: 3px solid #2563eb;
+  background: #eff6ff;
+}
+
+.step-icon.pending {
+  background: #e2e8f0;
+}
+
+.step-icon.issue {
+  background: #dc2626;
+  color: #fff;
+}
+
+.step-label {
+  font-size: 10px;
+  color: #64748b;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Small tag shown after the steps (UAT Ready, Issue Reported, etc.) */
+.step-tag {
+  margin-left: 10px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.step-tag-uat_ready        { background: #eef2ff; color: #4338ca; }
+.step-tag-uat_in_progress  { background: #faf5ff; color: #7c3aed; }
+.step-tag-compared         { background: #f0fdfa; color: #0f766e; }
+.step-tag-uat_done         { background: #f0fdf4; color: #15803d; }
+.step-tag-issue_reported   { background: #fef2f2; color: #b91c1c; }
+.step-tag-production       { background: #dcfce7; color: #166534; }
+
+.step-na-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+/* ── Old text-badge classes kept for fallback ──────────────────────── */
+.status-badge { display:none; }
+
+/* ── Action cell ───────────────────────────────────────────────── */
+.action-td {
+  min-width: 210px;
+  max-width: 240px;
+}
+
+/* Single action button */
+.act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  width: 100%;
+  max-width: 200px;
+  transition: background 0.15s, box-shadow 0.15s;
+  letter-spacing: 0.01em;
+}
+
+.act-btn.primary {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.35);
+}
+
+.act-btn.primary:hover {
+  background: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
+}
+
+.act-btn.complete {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  cursor: default;
+  box-shadow: none;
+}
+
+.act-btn.issue {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.act-btn.issue:hover {
+  background: #ffedd5;
+}
+
+.act-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.act-waiting {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.act-na {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.act-issue-sent {
+  font-size: 12px;
+  color: #dc2626;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* ── Kebab / Select cell ─────────────────────────────────────────── */
+.select-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+}
+
+.row-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.row-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.kebab-wrapper {
+  position: relative;
+}
+
+.kebab-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.1s;
+}
+
+.kebab-btn:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.kebab-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 100;
+  min-width: 170px;
+  overflow: hidden;
+}
+
+.kebab-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.kebab-menu button:hover {
+  background: #f8fafc;
+}
+
+.kebab-menu button.kebab-danger {
+  color: #dc2626;
+}
+
+.kebab-menu button.kebab-danger:hover {
+  background: #fef2f2;
+}
+
+/* Empty state */
+.empty-row td {
+  padding: 48px 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* Shared modal overlay (used for issue-view inline) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.issue-view-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 520px;
+  width: 95%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}

@@ -1,0 +1,11 @@
+invoice_id,vendor_name,amount,invoice_date,due_date,status,department
+INV00001,ABC Supplies,2500.00,2024-01-05,2024-02-05,Paid,Finance
+INV00002,Tech Solutions,5200.50,2024-01-08,2024-02-08,Paid,IT
+INV00003,Office Depot,1250.75,2024-01-10,2024-02-10,Pending,Operations
+INV00004,Cloud Services Inc,8900.00,2024-01-12,2024-02-12,Pending,IT
+INV00005,Facility Management,3400.00,2024-01-15,2024-02-15,Paid,Operations
+INV00006,Professional Services,12500.00,2024-01-18,2024-02-18,Pending,Finance
+INV00007,Consulting Firm,7800.25,2024-01-20,2024-02-20,Paid,HR
+INV00008,Marketing Agency,5500.00,2024-01-22,2024-02-22,Pending,Marketing
+INV00009,Insurance Provider,4200.00,2024-01-25,2024-02-25,Paid,Finance
+INV00010,Utilities Provider,1800.50,2024-01-28,2024-02-28,Paid,Operations

@@ -14,6 +14,6 @@ COPY src ./src
 
 EXPOSE 3000
 
-ENV REACT_APP_API_URL=http://localhost:5000/api
+ENV REACT_APP_API_URL=http://localhost:8000/api
 
 CMD ["npm", "start"]

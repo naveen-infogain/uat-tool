@@ -1,0 +1,38 @@
+[
+  {
+    "employee_id": "EMP001",
+    "employee_name": "John Smith",
+    "department": "Finance",
+    "gross_pay": 5247.83,
+    "tax_withheld": 1123.50,
+    "net_pay": 3890.20,
+    "overtime_pay": 450.00,
+    "bonus": 2000.00,
+    "fica_rate": 0.062,
+    "status": "Active"
+  },
+  {
+    "employee_id": "EMP002",
+    "employee_name": "Sarah Johnson",
+    "department": "Finance",
+    "gross_pay": 6150.25,
+    "tax_withheld": 1312.45,
+    "net_pay": 4690.15,
+    "overtime_pay": 0.00,
+    "bonus": 2500.00,
+    "fica_rate": 0.062,
+    "status": "Active"
+  },
+  {
+    "employee_id": "EMP003",
+    "employee_name": "Mike Brown",
+    "department": "Finance",
+    "gross_pay": 5890.50,
+    "tax_withheld": 1258.93,
+    "net_pay": 4478.32,
+    "overtime_pay": 600.00,
+    "bonus": 2000.00,
+    "fica_rate": 0.062,
+    "status": "Active"
+  }
+]

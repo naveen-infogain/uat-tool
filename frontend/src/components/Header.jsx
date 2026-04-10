@@ -2,17 +2,32 @@ import React from 'react';
 import './Header.css';
 
 export const Header = ({
+  role,
+  onRoleChange,
   searchQuery,
   onSearchChange,
   onMoveToProduction,
   canMoveToProduction,
-  view,
-  onViewChange,
 }) => {
   return (
     <div className="header-wrapper">
       <header className="header">
         <h1 className="header-title">SparkSAS Compare</h1>
+        <div className="role-switcher">
+          <span className="role-label">Viewing as:</span>
+          <button
+            className={`role-btn ${role === 'developer' ? 'active' : ''}`}
+            onClick={() => onRoleChange('developer')}
+          >
+            Developer
+          </button>
+          <button
+            className={`role-btn ${role === 'business_user' ? 'active' : ''}`}
+            onClick={() => onRoleChange('business_user')}
+          >
+            Business User
+          </button>
+        </div>
       </header>
 
       <div className="header-toolbar">
@@ -26,21 +41,6 @@ export const Header = ({
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
-
-          <div className="view-tabs">
-            <button
-              className={`view-tab ${view === 'dashboard' ? 'active' : ''}`}
-              onClick={() => onViewChange('dashboard')}
-            >
-              Files
-            </button>
-            <button
-              className={`view-tab ${view === 'workflow' ? 'active' : ''}`}
-              onClick={() => onViewChange('workflow')}
-            >
-              Workflow
-            </button>
-          </div>
         </div>
 
         <div className="toolbar-center">
@@ -52,7 +52,7 @@ export const Header = ({
             <input
               type="text"
               className="search-input"
-              placeholder="Search files, departments, or owners..."
+              placeholder="Search files, departments, or business units..."
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
             />
@@ -60,13 +60,16 @@ export const Header = ({
         </div>
 
         <div className="toolbar-right">
-          <button
-            className={`move-to-prod-btn ${canMoveToProduction ? 'enabled' : ''}`}
-            onClick={onMoveToProduction}
-            disabled={!canMoveToProduction}
-          >
-            Move to Production
-          </button>
+          {role === 'developer' && (
+            <button
+              className={`move-to-prod-btn ${canMoveToProduction ? 'enabled' : ''}`}
+              onClick={onMoveToProduction}
+              disabled={!canMoveToProduction}
+              title={canMoveToProduction ? '' : 'Select UAT Done files to enable'}
+            >
+              Move to Production
+            </button>
+          )}
         </div>
       </div>
     </div>

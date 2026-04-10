@@ -3,7 +3,8 @@
  */
 import axios from 'axios';
 
-const API_BASE = '/api';
+// Use environment variable or default to localhost
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 export const apiService = {
   /**

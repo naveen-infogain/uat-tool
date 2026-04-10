@@ -178,6 +178,20 @@
   margin-bottom: 24px;
 }
 
+/* Error Banner */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #991b1b;
+  margin-bottom: 20px;
+}
+
 /* Footer */
 .modal-footer {
   display: flex;
@@ -219,4 +233,21 @@
 .btn-upload:disabled {
   background: #93c5fd;
   cursor: not-allowed;
+}
+
+/* Loading States */
+.upload-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

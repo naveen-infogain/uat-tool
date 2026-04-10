@@ -5,6 +5,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
+from db import init_db
 from routes.upload import router as upload_router
 from routes.compare import router as compare_router
 from routes.export import router as export_router
@@ -18,14 +19,21 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=settings.cors_origins if settings.cors_origins else ["*"],
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create upload folder
-os.makedirs(settings.upload_folder, exist_ok=True)
+# Initialize database on startup
+@app.on_event("startup")
+def startup():
+    """Initialize database and create tables."""
+    os.makedirs(settings.upload_folder, exist_ok=True)
+    init_db()
+    print("✓ Database initialized")
+    print(f"✓ Upload folder: {settings.upload_folder}")
 
 # Routers
 app.include_router(upload_router, prefix="/api")

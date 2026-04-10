@@ -1,0 +1,11 @@
+employee_id,employee_name,department,gross_pay,tax_withheld,net_pay,overtime_pay,bonus,fica_rate,status
+EMP001,John Smith,Finance,5247.38,1123.50,3890.45,450.00,2000.00,0.062,Active
+EMP002,Sarah Johnson,Finance,6150.25,1312.45,4690.15,0.00,2500.00,0.062,Active
+EMP003,Mike Brown,Finance,5890.50,1258.93,4478.32,650.00,2000.00,0.062,Active
+EMP004,Jessica Lee,Accounting,5500.00,1175.00,4190.00,300.00,1500.00,0.062,Active
+EMP005,David Wilson,Accounting,6202.75,1323.95,4751.05,500.00,2500.00,0.062,Active
+EMP006,Emma Davis,HR,4950.40,1057.25,3788.90,200.00,1000.00,0.062,Active
+EMP007,Robert Miller,HR,5400.60,1153.63,4140.72,0.00,1500.00,0.062,Active
+EMP008,Lisa Anderson,Operations,5150.20,1100.07,3950.08,400.00,1500.00,0.062,Active
+EMP009,James Taylor,Operations,6050.35,1290.75,4710.25,550.00,2000.00,0.062,Active
+EMP010,Patricia Martinez,Marketing,5800.00,1238.00,4492.00,300.00,1500.00,0.062,Active

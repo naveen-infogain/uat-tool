@@ -5,15 +5,17 @@ const MODAL_CONFIG = {
   pyspark: {
     title: 'Upload PySpark Output',
     subtitle: 'Provide the processed PySpark output file and (optional) SQL query used to generate it.',
-    accept: '.csv,.parquet,.json',
-    acceptLabel: 'Accepted: .csv, .parquet, .json, up to 500 MB.',
+    accept: '.csv,.parquet,.json,.xlsx,.xls',
+    acceptLabel: 'Accepted: .csv, .parquet, .json, .xlsx, up to 100 MB.',
+    allowedTypes: ['csv', 'parquet', 'json', 'xlsx', 'xls'],
     showSQLQuery: true,
   },
   sas: {
     title: 'Upload SAS Output',
     subtitle: 'Upload the finalized SAS output file generated from your SAS job.',
-    accept: '.csv,.parquet,.sas7bdat',
-    acceptLabel: 'Accepted: .csv, .parquet, .sas7bdat · up to 500 MB.',
+    accept: '.csv,.parquet,.sas7bdat,.xlsx,.xls',
+    acceptLabel: 'Accepted: .csv, .parquet, .sas7bdat, .xlsx, up to 100 MB.',
+    allowedTypes: ['csv', 'parquet', 'sas7bdat', 'xlsx', 'xls'],
     showSQLQuery: false,
   },
 };
@@ -23,29 +25,99 @@ export const UploadModal = ({ type, file, onUpload, onCancel }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [sqlQuery, setSqlQuery] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
   const inputRef = useRef(null);
 
   const config = MODAL_CONFIG[type] || MODAL_CONFIG.pyspark;
+
+  // Validate file before selection
+  const validateFile = (f) => {
+    if (!f) return { valid: false, error: 'No file selected' };
+    
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!config.allowedTypes.includes(ext)) {
+      return { 
+        valid: false, 
+        error: `File type not supported. Accepted: ${config.allowedTypes.join(', ')}.` 
+      };
+    }
+
+    const maxSize = 100 * 1024 * 1024; // 100 MB
+    if (f.size > maxSize) {
+      return { 
+        valid: false, 
+        error: `File size exceeds 100 MB limit. Your file: ${(f.size / 1024 / 1024).toFixed(1)} MB.` 
+      };
+    }
+
+    return { valid: true, error: null };
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
     const f = e.dataTransfer.files[0];
-    if (f) setSelectedFile(f);
+    if (f) {
+      const validation = validateFile(f);
+      if (validation.valid) {
+        setSelectedFile(f);
+        setError(null);
+      } else {
+        setError(validation.error);
+        setSelectedFile(null);
+      }
+    }
   };
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
-    if (f) setSelectedFile(f);
+    if (f) {
+      const validation = validateFile(f);
+      if (validation.valid) {
+        setSelectedFile(f);
+        setError(null);
+      } else {
+        setError(validation.error);
+        setSelectedFile(null);
+      }
+    }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      setError('Please select a file to upload');
+      return;
+    }
+
     setUploading(true);
-    // Simulate upload delay
-    await new Promise(r => setTimeout(r, 1200));
-    setUploading(false);
-    onUpload(selectedFile, sqlQuery);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('user_type', type === 'pyspark' ? 'developer' : 'client');
+      if (sqlQuery && config.showSQLQuery) {
+        formData.append('sql_query', sqlQuery);
+      }
+
+      const response = await fetch('http://localhost:8000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Upload failed');
+      }
+
+      const result = await response.json();
+      setUploading(false);
+      onUpload({ ...result, sqlQuery, fileName: selectedFile.name }, sqlQuery);
+    } catch (err) {
+      setUploading(false);
+      setError(err.message || 'Upload failed. Please try again.');
+      console.error('Upload error:', err);
+    }
   };
 
   return (
@@ -95,6 +167,18 @@ export const UploadModal = ({ type, file, onUpload, onCancel }) => {
         </div>
         <p className="accept-label">{config.acceptLabel}</p>
 
+        {/* Error Message */}
+        {error && (
+          <div className="error-banner">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {error}
+          </div>
+        )}
+
         {/* SQL Query (PySpark only) */}
         {config.showSQLQuery && (
           <>
@@ -127,7 +211,14 @@ export const UploadModal = ({ type, file, onUpload, onCancel }) => {
             onClick={handleUpload}
             disabled={!selectedFile || uploading}
           >
-            {uploading ? 'Uploading...' : 'Upload'}
+            {uploading ? (
+              <>
+                <span className="upload-spinner" />
+                Uploading...
+              </>
+            ) : (
+              'Upload'
+            )}
           </button>
         </div>
       </div>

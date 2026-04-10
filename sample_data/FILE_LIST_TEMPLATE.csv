@@ -1,0 +1,7 @@
+Department,File Name,File Path,Owner,Ready for UAT,Where to Save?
+Finance,Q1_Payroll_2024,/data/payroll/q1,john.doe@company.com,Yes,Finance/Q1_Payroll_2024/
+Finance,Q1_Invoices_2024,/data/invoices/q1,sarah.smith@company.com,Yes,Finance/Q1_Invoices_2024/
+HR,Employee_Records_2024,/data/hr/employees,mike.johnson@company.com,Yes,HR/Employee_Records_2024/
+Accounting,Trial_Balance_Q1,/data/accounting/tb,jessica.lee@company.com,Yes,Accounting/Trial_Balance_Q1/
+Marketing,Campaign_Analytics_Q1,/data/marketing/analytics,david.brown@company.com,No,Marketing/Campaign_Analytics_Q1/
+Operations,Inventory_Count_2024,/data/ops/inventory,emma.wilson@company.com,Yes,Operations/Inventory_Count_2024/

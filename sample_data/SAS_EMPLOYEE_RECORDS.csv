@@ -1,0 +1,11 @@
+emp_id,first_name,last_name,hire_date,department,title,salary,phone,email
+E001,John,Smith,2020-03-15,Finance,Senior Analyst,$85000,555-0101,john.smith@company.com
+E002,Sarah,Johnson,2019-07-22,Finance,Manager,$95000,555-0102,sarah.johnson@company.com
+E003,Mike,Brown,2021-01-10,Operations,Coordinator,$65000,555-0103,mike.brown@company.com
+E004,Jessica,Lee,2018-11-05,Accounting,Controller,$105000,555-0104,jessica.lee@company.com
+E005,David,Wilson,2022-02-01,IT,Developer,$90000,555-0105,david.wilson@company.com
+E006,Emma,Davis,2019-09-16,HR,Specialist,$72000,555-0106,emma.davis@company.com
+E007,Robert,Miller,2020-06-08,Operations,Supervisor,$78000,555-0107,robert.miller@company.com
+E008,Lisa,Anderson,2021-04-20,Marketing,Analyst,$68000,555-0108,lisa.anderson@company.com
+E009,James,Taylor,2017-12-11,Finance,Director,$120000,555-0109,james.taylor@company.com
+E010,Patricia,Martinez,2020-08-03,Sales,Executive,$82000,555-0110,patricia.martinez@company.com
