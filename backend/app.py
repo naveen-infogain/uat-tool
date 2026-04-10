@@ -9,6 +9,7 @@ from db import init_db
 from routes.upload import router as upload_router
 from routes.compare import router as compare_router
 from routes.export import router as export_router
+from routes.workflow import router as workflow_router
 
 app = FastAPI(
     title="UAT Data Comparison Tool",
@@ -39,6 +40,7 @@ def startup():
 app.include_router(upload_router, prefix="/api")
 app.include_router(compare_router, prefix="/api")
 app.include_router(export_router, prefix="/api")
+app.include_router(workflow_router, prefix="/api")
 
 
 @app.get("/api/health")

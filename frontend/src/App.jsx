@@ -1,57 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { MergedFileWorkflowTable } from './components/MergedFileWorkflowTable';
 import './App.css';
 
-// File status state machine:
-// not_started → pyspark_uploaded → uat_ready → uat_in_progress → sas_uploaded → compared → uat_done
-//                                                                                          ↘ issue_reported → pyspark_uploaded (cycle)
-// not_applicable (developer can mark/unmark at any time before uat_ready)
-
-// Demo mode: Enable with REACT_APP_DEMO_MODE=true environment variable
-const DEMO_MODE = process.env.REACT_APP_DEMO_MODE === 'true';
-
-let nextId = 6;
-const DEMO_FILES = [
-  { id: 1, department: 'Dept1', fileName: 'Invoice_FY26', filePath: '/mar/gsdd/exc', owner: 'U1', readyForUAT: true,  savePath: 'Dept1/mar/gsdd/exc/', status: 'not_started',      pysparkFile: null, sasFile: null, issueComment: null, pysparkUploadId: null, sasUploadId: null, comparisonId: null, comparisonResult: null },
-  { id: 2, department: 'Dept1', fileName: 'File2',        filePath: '',              owner: 'U1', readyForUAT: false, savePath: '',                   status: 'not_started',      pysparkFile: null, sasFile: null, issueComment: null, pysparkUploadId: null, sasUploadId: null, comparisonId: null, comparisonResult: null },
-  { id: 3, department: 'Dept1', fileName: 'File6',        filePath: '',              owner: 'U2', readyForUAT: true,  savePath: '',                   status: 'pyspark_uploaded', pysparkFile: 'file6.csv', sasFile: null, issueComment: null, pysparkUploadId: null, sasUploadId: null, comparisonId: null, comparisonResult: null },
-  { id: 4, department: 'Dept1', fileName: 'File8',        filePath: '',              owner: 'U2', readyForUAT: true,  savePath: '',                   status: 'uat_ready',        pysparkFile: 'file8.csv', sasFile: null, issueComment: null, pysparkUploadId: null, sasUploadId: null, comparisonId: null, comparisonResult: null },
-  { id: 5, department: 'Dept2', fileName: 'Invoice_FY26', filePath: '/uvw/fgh',      owner: 'U3', readyForUAT: false, savePath: '',                   status: 'compared',         pysparkFile: 'inv.csv', sasFile: 'sas_inv.csv', issueComment: null, pysparkUploadId: null, sasUploadId: null, comparisonId: null, comparisonResult: null },
-];
-
-const INITIAL_FILES = DEMO_MODE ? DEMO_FILES : [];
-
+const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 function App() {
-  const [role, setRole] = useState('developer'); // 'developer' | 'business_user'
-  const [files, setFiles] = useState(INITIAL_FILES);
+  const [role, setRole] = useState('developer');
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const handleUpdateFile = (id, updates) => {
-    setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
-  };
+  // ── Load all workflow files from DB on mount ──────────────────────────────
+  useEffect(() => {
+    fetch(`${API}/workflow-files`)
+      .then(r => r.json())
+      .then(data => setFiles(data.files || []))
+      .catch(err => console.error('Failed to load files:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const handleAddFiles = (newRows) => {
-    const rows = newRows.map(r => ({
-      ...r,
-      id: nextId++,
-      status: 'not_started',
-      pysparkFile: null,
-      sasFile: null,
-      issueComment: null,
+  // ── Sync a status/field update to DB, then update local state ────────────
+  const handleUpdateFile = useCallback(async (id, updates) => {
+    // Optimistically update UI immediately
+    setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+    try {
+      await fetch(`${API}/workflow-files/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+    } catch (err) {
+      console.error('Failed to persist file update:', err);
+    }
+  }, []);
+
+  // ── Add new rows (from file-list upload) ─────────────────────────────────
+  const handleAddFiles = useCallback(async (newRows) => {
+    const payload = newRows.map(r => ({
+      department: r.department || '',
+      fileName: r.fileName || r.file_name || '',
+      filePath: r.filePath || r.file_path || '',
+      owner: r.owner || '',
+      readyForUAT: !!(r.readyForUAT ?? r.ready_for_uat),
+      savePath: r.savePath || r.save_path || '',
     }));
-    // New rows added at the TOP; existing rows shift down
-    setFiles(prev => [...rows, ...prev]);
-  };
+    try {
+      const resp = await fetch(`${API}/workflow-files`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json();
+      const saved = (data.files || []).map(f => ({
+        ...f,
+        pysparkFile: null,
+        sasFile: null,
+        issueComment: null,
+      }));
+      setFiles(prev => [...saved, ...prev]);
+    } catch (err) {
+      console.error('Failed to save new files:', err);
+    }
+  }, []);
+
+  // ── Move to production = delete from DB ──────────────────────────────────
+  const handleMoveToProduction = useCallback(async (ids) => {
+    const toMove = ids || selectedIds;
+    setFiles(prev => prev.filter(f => !toMove.includes(f.id)));
+    setSelectedIds(prev => prev.filter(id => !toMove.includes(id)));
+    await Promise.all(
+      toMove.map(id =>
+        fetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error)
+      )
+    );
+  }, [selectedIds]);
+
+  // ── Hard delete ───────────────────────────────────────────────────────────
+  const handleDeleteFile = useCallback(async (id) => {
+    setFiles(prev => prev.filter(f => f.id !== id));
+    setSelectedIds(prev => prev.filter(x => x !== id));
+    await fetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error);
+  }, []);
 
   const filteredFiles = files.filter(f => {
     const q = searchQuery.toLowerCase();
     return (
-      f.department.toLowerCase().includes(q) ||
-      f.fileName.toLowerCase().includes(q) ||
-      f.filePath.toLowerCase().includes(q) ||
+      (f.department || '').toLowerCase().includes(q) ||
+      (f.fileName || '').toLowerCase().includes(q) ||
+      (f.filePath || '').toLowerCase().includes(q) ||
       (f.owner || '').toLowerCase().includes(q)
     );
   });
@@ -59,17 +97,15 @@ function App() {
   const canMoveToProduction = selectedIds.length > 0 &&
     selectedIds.every(id => files.find(f => f.id === id)?.status === 'uat_done');
 
-  const handleMoveToProduction = (ids) => {
-    // ids is either the bulk selectedIds array or a single [id] from per-row button
-    const toMove = ids || selectedIds;
-    setFiles(prev => prev.filter(f => !toMove.includes(f.id)));
-    setSelectedIds(prev => prev.filter(id => !toMove.includes(id)));
-  };
-
-  const handleDeleteFile = (id) => {
-    setFiles(prev => prev.filter(f => f.id !== id));
-    setSelectedIds(prev => prev.filter(x => x !== id));
-  };
+  if (loading) {
+    return (
+      <div className="app">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#64748b', fontSize: 15 }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">

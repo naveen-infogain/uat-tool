@@ -56,7 +56,8 @@ class WorkflowFile(Base):
     
     issue_comment = Column(Text, nullable=True)
     comparison_id = Column(String(36), nullable=True)  # FK to Comparison
-    
+    extras = Column(JSON, nullable=True)  # pysparkFile, sasFile, comparisonResult etc.
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

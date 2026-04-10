@@ -119,7 +119,7 @@ const ActionCell = ({ file, role, onAction }) => {
     case 'compared':
       return <button className="act-btn primary" onClick={() => onAction(file, 'view_deviations')}>Review Validation</button>;
     case 'uat_done':
-      return <span className="act-done-badge">✓ UAT Done</span>;
+      return <button className="act-btn complete-outline" onClick={() => onAction(file, 'move_to_production_single')}>Move to Production</button>;
     case 'issue_reported':
       return <span className="act-issue-sent">Issue Sent to Developer</span>;
     default:
