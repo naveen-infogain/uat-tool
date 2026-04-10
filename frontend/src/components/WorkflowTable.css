@@ -1,0 +1,202 @@
+.workflow-wrap {
+  padding: 0 32px;
+}
+
+.workflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.workflow-table thead tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.workflow-table th {
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.07em;
+  text-align: left;
+}
+
+.workflow-row {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.workflow-row td {
+  padding: 20px 16px;
+  vertical-align: middle;
+}
+
+.folder-path {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #334155;
+  width: 220px;
+}
+
+/* Status badge */
+.badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.badge.not-started {
+  background: #fef9c3;
+  color: #92400e;
+}
+
+/* Step flow */
+.step-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-connector {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  min-width: 30px;
+  margin-bottom: 20px;
+}
+
+.step-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-icon.done {
+  background: #16a34a;
+}
+
+.step-icon.done svg {
+  width: 16px;
+  height: 16px;
+}
+
+.step-icon.active {
+  border: 3px solid #2563eb;
+  background: #fff;
+}
+
+.step-icon.pending {
+  background: #cbd5e1;
+}
+
+.step-label {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+/* Action cell */
+.action-cell {
+  width: 200px;
+}
+
+.action-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.action-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.action-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+.action-btn.complete {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+/* Select cell */
+.select-cell {
+  width: 80px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.row-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.kebab-wrapper {
+  position: relative;
+}
+
+.kebab-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.kebab-btn:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.kebab-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 100;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.kebab-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.kebab-menu button:hover {
+  background: #f8fafc;
+}

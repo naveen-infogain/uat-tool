@@ -1,0 +1,267 @@
+/* Comparison Viewer Component Styles */
+
+.comparison-viewer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background: white;
+}
+
+.summary-section {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+  align-items: center;
+}
+
+.quality-score {
+  border-radius: 12px;
+  padding: 20px;
+  border: 3px solid #4472C4;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+  color: white;
+  font-weight: bold;
+}
+
+.score-text {
+  font-size: 32px;
+}
+
+.score-label {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.stat-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box:nth-child(2) {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-box:nth-child(3) {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-box:nth-child(4) {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #eee;
+}
+
+.tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: #666;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.tab:hover {
+  color: #4472C4;
+  border-bottom-color: #4472C4;
+}
+
+.tab.active {
+  color: #4472C4;
+  border-bottom-color: #4472C4;
+}
+
+.tab-content {
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.tab-content h3 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.summary-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.summary-details table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.summary-details table td:first-child {
+  font-weight: 500;
+  color: #555;
+  width: 40%;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.export-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.export-btn.excel {
+  background: #2ecc71;
+}
+
+.export-btn.excel:hover {
+  background: #27ae60;
+}
+
+.export-btn.csv {
+  background: #3498db;
+}
+
+.export-btn.csv:hover {
+  background: #2980b9;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.comparison-table thead {
+  background: #f0f0f0;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.comparison-table th {
+  font-weight: 600;
+  color: #333;
+}
+
+.comparison-table tr:hover {
+  background: #f9f9f9;
+}
+
+.similarity-bar {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.similarity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71, #f39c12);
+  transition: width 0.3s ease;
+}
+
+.unmatched-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.unmatched-col h4 {
+  margin-top: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.unmatched-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.unmatched-col li {
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.diff-value-1 {
+  background: #ffe6e6;
+  color: #c00;
+}
+
+.diff-value-2 {
+  background: #e6f7ff;
+  color: #0066cc;
+}
+
+@media (max-width: 768px) {
+  .summary-section {
+    grid-template-columns: 1fr;
+  }
+
+  .statistics-grid {
+    grid-template-columns: 2fr 2fr;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  .unmatched-columns {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,55 @@
+.dashboard {
+  padding: 0 32px;
+}
+
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.file-table thead tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.file-table th {
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.07em;
+  text-align: left;
+  background: #fff;
+}
+
+.file-row {
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.file-row:hover {
+  background: #f8fafc;
+}
+
+.file-row td {
+  padding: 20px 16px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.dept-cell {
+  font-weight: 600;
+  color: #0f172a !important;
+  width: 180px;
+}
+
+.filename-cell {
+  color: #334155 !important;
+}
+
+.filepath-cell {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #64748b !important;
+}

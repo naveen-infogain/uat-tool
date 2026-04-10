@@ -1,0 +1,35 @@
+# Local Python environments
+backend/venv/
+venv/
+env/
+ENV/
+
+# Python cache and build output
+**/__pycache__/
+**/*.pyc
+build/
+dist/
+*.egg-info/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+node_modules/
+.next/
+out/
+
+# Runtime and temporary data
+/tmp/
+uploads/
+backend/uploads/
+*.log
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
