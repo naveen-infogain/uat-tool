@@ -358,6 +358,41 @@
   box-shadow: none;
 }
 
+.act-btn.complete-outline {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1.5px solid #16a34a;
+  box-shadow: none;
+}
+
+.act-btn.complete-outline:hover {
+  background: #dcfce7;
+}
+
+.act-btn.danger {
+  background: #fff1f2;
+  color: #dc2626;
+  border: 1.5px solid #fca5a5;
+  box-shadow: none;
+}
+
+.act-btn.danger:hover {
+  background: #fee2e2;
+}
+
+.act-done-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 7px 14px;
+}
+
 .act-btn.issue {
   background: #fff7ed;
   color: #c2410c;

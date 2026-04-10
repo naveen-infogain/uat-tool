@@ -59,10 +59,16 @@ function App() {
   const canMoveToProduction = selectedIds.length > 0 &&
     selectedIds.every(id => files.find(f => f.id === id)?.status === 'uat_done');
 
-  const handleMoveToProduction = () => {
-    // Remove selected completed files from the list
-    setFiles(prev => prev.filter(f => !selectedIds.includes(f.id)));
-    setSelectedIds([]);
+  const handleMoveToProduction = (ids) => {
+    // ids is either the bulk selectedIds array or a single [id] from per-row button
+    const toMove = ids || selectedIds;
+    setFiles(prev => prev.filter(f => !toMove.includes(f.id)));
+    setSelectedIds(prev => prev.filter(id => !toMove.includes(id)));
+  };
+
+  const handleDeleteFile = (id) => {
+    setFiles(prev => prev.filter(f => f.id !== id));
+    setSelectedIds(prev => prev.filter(x => x !== id));
   };
 
   return (
@@ -72,7 +78,7 @@ function App() {
         onRoleChange={setRole}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onMoveToProduction={handleMoveToProduction}
+        onMoveToProduction={() => handleMoveToProduction(selectedIds)}
         canMoveToProduction={canMoveToProduction}
       />
       <main className="app-main">
@@ -82,6 +88,8 @@ function App() {
           selectedIds={selectedIds}
           onSelectChange={setSelectedIds}
           onUpdateFile={handleUpdateFile}
+          onDeleteFile={handleDeleteFile}
+          onMoveToProduction={handleMoveToProduction}
           onAddFiles={handleAddFiles}
         />
       </main>

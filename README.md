@@ -1,158 +1,184 @@
 # UAT Data Comparison Tool
 
-Full-stack data comparison tool for reviewing PySpark and SAS outputs through a Figma-based workflow UI.
+Full-stack tool for validating PySpark and SAS output files. The developer runs a PySpark job, uploads the output with the SQL query used. The business user copies that SQL, runs it in SAS, uploads the SAS output, and the tool compares both datasets side-by-side.
 
-## Current State
+## How It Works
 
-- Backend is implemented with FastAPI.
-- Frontend is implemented in React.
-- The UI currently matches the approved step-wise flow:
-  - Files dashboard
-  - Workflow table
-  - Upload PySpark modal
-  - Upload SAS modal
-  - Review deviation metrics page
-- The current frontend workflow uses seeded mock data for the Figma experience.
-- Backend upload, comparison, and export APIs are implemented and ready to be wired into the workflow UI.
+| Role | What they do |
+|------|-------------|
+| **Developer** | Uploads a file list → uploads PySpark output + SQL query → marks UAT ready |
+| **Business User** | Copies the SQL → runs it in SAS → uploads SAS output → runs validation → reviews deviations → approves or reports issue |
 
-## Tech Stack
-
-### Backend
-- FastAPI
-- pandas
-- openpyxl
-- python-multipart
-- uvicorn
-
-### Frontend
-- React 18
-- axios
-- react-router-dom
-
-## Supported File Types
-
-Backend parsing currently supports:
-- `.xlsx`
-- `.xls`
-- `.csv`
-- `.parquet`
-- `.json`
-- `.sas7bdat`
+---
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.13 tested locally
-- Node.js 18+
-- Docker Desktop optional
+- Python 3.10+ ([python.org](https://python.org))
+- Node.js 18+ ([nodejs.org](https://nodejs.org))
 
-### Backend Setup
+---
 
-```bash
-cd backend
-python -m venv venv
+## Case 1 — One-Command Start (Recommended)
 
-# Windows
-venv\Scripts\activate
+Run this once from the project root in PowerShell:
 
-pip install -r requirements.txt
-uvicorn app:app --reload --port 8000
+```powershell
+.\start.ps1
 ```
 
-Backend URLs:
-- API base: `http://localhost:8000/api`
-- Swagger docs: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/api/health`
+This will:
+1. Check Python and Node.js are installed
+2. Create the Python virtual environment (first run only)
+3. Install all backend and frontend dependencies (first run only)
+4. Open two terminal windows — one for the backend, one for the frontend
 
-### Frontend Setup
+**URLs after startup:**
 
-```bash
+| Service | URL |
+|---------|-----|
+| Frontend app | http://localhost:3000 |
+| Backend API | http://localhost:8000/api |
+| Swagger docs | http://localhost:8000/docs |
+| Health check | http://localhost:8000/api/health |
+
+> If PowerShell blocks the script: run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once, then retry.
+
+---
+
+## Case 2 — Manual Start (Two Terminals)
+
+**Terminal 1 — Backend:**
+
+```powershell
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Terminal 2 — Frontend:**
+
+```powershell
 cd frontend
 npm install
+set REACT_APP_API_URL=http://localhost:8000/api
 npm start
 ```
 
-Frontend URL:
-- App: `http://localhost:3000`
+---
 
-The frontend dev server proxies API requests to `http://localhost:8000`.
+## User Workflows
 
-### Docker Setup
+### Developer workflow
+1. Switch role to **Developer** (top-right toggle)
+2. Click **Upload File List** → upload the prerequisite CSV with file names
+3. For each file: click **Upload PySpark Output** → drag & drop the CSV/Parquet/Excel file → paste the SQL query used → Upload
+4. Click **Mark UAT Ready** → business user is now unblocked
+5. After review: if issue reported, re-upload PySpark and repeat
+6. Once **UAT Done**: click **Move to Production** (removes from list) or **Delete** to discard
+
+### Business user workflow
+1. Switch role to **Business User**
+2. Click **Start UAT** on a ready file
+3. Click **View SQL** → copy the SQL query the developer used
+4. Run that SQL in your SAS environment to produce the output file
+5. Click **Upload SAS Output** → upload the SAS result file
+6. Click **Run Validation** → comparison runs automatically
+7. Click **Review Metrics** → inspect row-level deviations and quality score
+8. Click **Approve UAT** (marks done) or **Report Issue** (sends issue to developer)
+
+---
+
+## Tech Stack
+
+### Backend
+- **FastAPI** — async REST API
+- **SQLAlchemy** — ORM with SQLite (default) or PostgreSQL
+- **pandas** — file parsing (CSV, Excel, Parquet, JSON, SAS7BDAT)
+- **uvicorn** — ASGI server
+
+### Frontend
+- **React 18** — UI framework
+- **Component-based** — UploadModal, MergedFileWorkflowTable, DeviationModal, SASQueriesModal
+
+## Supported File Types
+
+`.xlsx` · `.xls` · `.csv` · `.parquet` · `.json` · `.sas7bdat`
+
+---
+
+## Database
+
+SQLite is used by default — no setup required. The database file `backend/uat_tool.db` is created automatically on first start.
+
+To use PostgreSQL instead, set this environment variable before starting the backend:
+
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/uat_tool
+```
+
+---
+
+## Backend API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/upload` | Upload a file (returns `upload_id`) |
+| `GET` | `/api/upload/{id}` | Get upload details + SQL query |
+| `GET` | `/api/uploads` | List all uploads |
+| `POST` | `/api/compare` | Compare two uploads |
+| `GET` | `/api/comparison/{id}` | Get comparison results |
+| `GET` | `/api/export/{id}/excel` | Download Excel report |
+| `GET` | `/api/export/{id}/csv` | Download CSV report |
+| `GET` | `/api/health` | Health check |
+
+### Comparison modes
+- `exact` — case-sensitive, format-sensitive
+- `loose` — case-insensitive, numeric tolerance ±0.01
+- `structural` — ignores empty rows/columns
+
+---
+
+## Docker
 
 ```bash
 docker-compose up --build
 ```
 
-Docker ports:
-- Frontend: `3000`
-- Backend: `8000`
+---
 
-## Implemented UI Flow
+## Project Structure
 
-The current React app follows the approved flow from the screenshots:
-
-1. Files dashboard
-   - Search bar
-   - Filter button
-   - Department / file name / file path table
-2. Workflow table
-   - Folder path
-   - Step indicators for PySpark upload, SAS upload, validation
-   - Action buttons
-   - Row selection and move-to-production state
-3. Upload PySpark modal
-   - Drag and drop upload area
-   - Optional SQL query input
-4. Upload SAS modal
-   - Drag and drop upload area
-5. Review deviation metrics page
-   - Summary banner
-   - Deviation summary table
-   - Detailed deviation report
-   - Reject / Approve actions
-
-## Backend API
-
-### Upload
-- `POST /api/upload`
-- `GET /api/upload/{upload_id}`
-- `GET /api/uploads`
-
-### Compare
-- `POST /api/compare`
-- `GET /api/comparison/{comparison_id}`
-- `GET /api/comparisons`
-
-### Export
-- `GET /api/export/{comparison_id}/excel`
-- `GET /api/export/{comparison_id}/csv`
-
-### Health
-- `GET /api/health`
-
-## API Examples
-
-### Upload File
-
-```bash
-curl -X POST http://localhost:8000/api/upload \
-  -F "file=@sample.csv" \
-  -F "user_type=developer"
 ```
+uat-tool/
+├── start.ps1                 ← one-command startup
+├── backend/
+│   ├── app.py
+│   ├── config.py
+│   ├── db.py                 ← SQLAlchemy setup
+│   ├── models.py             ← DB table definitions
+│   ├── requirements.txt
+│   ├── routes/
+│   │   ├── upload.py
+│   │   ├── compare.py
+│   │   └── export.py
+│   └── services/
+│       ├── comparator.py
+│       ├── exporter.py
+│       └── file_handler.py
+├── frontend/
+│   └── src/
+│       ├── App.jsx
+│       └── components/
+│           ├── MergedFileWorkflowTable.jsx
+│           ├── UploadModal.jsx
+│           ├── SASQueriesModal.jsx
+│           ├── DeviationModal.jsx
+│           └── IssueModal.jsx
+└── sample_data/              ← test files for manual testing
 
-### Compare Two Uploads
-
-```bash
-curl -X POST http://localhost:8000/api/compare \
-  -H "Content-Type: application/json" \
-  -d '{
-    "upload_id_1": "upload-id-1",
-    "upload_id_2": "upload-id-2",
-    "mode": "exact"
-  }'
-```
-
-### Export Excel Report
 
 ```bash
 curl -O http://localhost:8000/api/export/COMPARISON_ID/excel

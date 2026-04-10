@@ -90,7 +90,12 @@ const ActionCell = ({ file, role, onAction }) => {
       case 'compared':
         return <span className="act-waiting">Awaiting Business User</span>;
       case 'uat_done':
-        return <button className="act-btn complete" disabled>✓ UAT Done</button>;
+        return (
+          <div className="act-group">
+            <button className="act-btn complete-outline" onClick={() => onAction(file, 'move_to_production_single')}>Move to Production</button>
+            <button className="act-btn danger" onClick={() => onAction(file, 'delete')}>Delete</button>
+          </div>
+        );
       case 'issue_reported':
         return <button className="act-btn issue" onClick={() => onAction(file, 'view_issue')}>View Issue</button>;
       default:
@@ -119,7 +124,7 @@ const ActionCell = ({ file, role, onAction }) => {
     case 'compared':
       return <button className="act-btn primary" onClick={() => onAction(file, 'view_deviations')}>Review Metrics</button>;
     case 'uat_done':
-      return <button className="act-btn complete" disabled>✓ UAT Done</button>;
+      return <span className="act-done-badge">✓ UAT Done</span>;
     case 'issue_reported':
       return <span className="act-issue-sent">Issue Sent to Developer</span>;
     default:
@@ -128,7 +133,7 @@ const ActionCell = ({ file, role, onAction }) => {
 };
 
 // ── Main component ───────────────────────────────────────────────────────────
-export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChange, onUpdateFile, onAddFiles }) => {
+export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChange, onUpdateFile, onDeleteFile, onMoveToProduction, onAddFiles }) => {
   const [uploadModal, setUploadModal]       = useState(null); // { file, type }
   const [showAddFiles, setShowAddFiles]     = useState(false);
   const [sasQueriesFile, setSasQueriesFile] = useState(null);
@@ -142,15 +147,17 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
   const handleAction = (file, type) => {
     setMenuOpenId(null);
     switch (type) {
-      case 'mark_na':          return onUpdateFile(file.id, { status: 'not_applicable' });
-      case 'restore':          return onUpdateFile(file.id, { status: 'not_started' });
-      case 'mark_uat_ready':   return onUpdateFile(file.id, { status: 'uat_ready' });
-      case 'start_uat':        return onUpdateFile(file.id, { status: 'uat_in_progress' });
-      case 'compare':          return handleCompare(file);
-      case 'upload_pyspark':   return setUploadModal({ file, type: 'pyspark' });
-      case 'upload_sas':       return setUploadModal({ file, type: 'sas' });
-      case 'view_sas_queries': return handleViewSql(file);
-      case 'view_sql':         return handleViewSql(file);
+      case 'mark_na':                  return onUpdateFile(file.id, { status: 'not_applicable' });
+      case 'restore':                  return onUpdateFile(file.id, { status: 'not_started' });
+      case 'mark_uat_ready':           return onUpdateFile(file.id, { status: 'uat_ready' });
+      case 'start_uat':                return onUpdateFile(file.id, { status: 'uat_in_progress' });
+      case 'compare':                  return handleCompare(file);
+      case 'upload_pyspark':           return setUploadModal({ file, type: 'pyspark' });
+      case 'upload_sas':               return setUploadModal({ file, type: 'sas' });
+      case 'view_sas_queries':         return handleViewSql(file);
+      case 'view_sql':                 return handleViewSql(file);
+      case 'delete':                   return onDeleteFile(file.id);
+      case 'move_to_production_single': return onMoveToProduction([file.id]);
       case 'view_deviations':  return setDeviationFile(file);
       case 'view_issue':       return setIssueViewText(file.issueComment);
       default: break;
@@ -354,6 +361,7 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
                             ? <button className="kebab-danger" onClick={() => handleAction(file, 'mark_na')}>Mark as N/A</button>
                             : <button onClick={() => handleAction(file, 'restore')}>Restore</button>
                           }
+                          <button className="kebab-danger" onClick={() => handleAction(file, 'delete')}>Delete Record</button>
                         </div>
                       )}
                     </div>
