@@ -294,7 +294,31 @@
 /* ── Action cell ───────────────────────────────────────────────── */
 .action-td {
   min-width: 210px;
-  max-width: 240px;
+  max-width: 260px;
+}
+
+/* Two-button group (e.g. View SQL + Upload SAS) */
+.act-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.act-group .act-btn {
+  max-width: 100%;
+}
+
+/* Outline/secondary style */
+.act-btn.secondary {
+  background: #f8fafc;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
+  box-shadow: none;
+}
+
+.act-btn.secondary:hover {
+  background: #eff6ff;
 }
 
 /* Single action button */

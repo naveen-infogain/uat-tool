@@ -106,7 +106,14 @@ const ActionCell = ({ file, role, onAction }) => {
     case 'uat_ready':
       return <button className="act-btn primary" onClick={() => onAction(file, 'start_uat')}>Start UAT</button>;
     case 'uat_in_progress':
-      return <button className="act-btn primary" onClick={() => onAction(file, 'upload_sas')}>Upload SAS Output</button>;
+      return (
+        <div className="act-group">
+          {file.pysparkSqlQuery && (
+            <button className="act-btn secondary" onClick={() => onAction(file, 'view_sql')}>View SQL</button>
+          )}
+          <button className="act-btn primary" onClick={() => onAction(file, 'upload_sas')}>Upload SAS Output</button>
+        </div>
+      );
     case 'sas_uploaded':
       return <button className="act-btn primary" onClick={() => onAction(file, 'compare')}>Run Validation</button>;
     case 'compared':
@@ -143,6 +150,7 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
       case 'upload_pyspark':   return setUploadModal({ file, type: 'pyspark' });
       case 'upload_sas':       return setUploadModal({ file, type: 'sas' });
       case 'view_sas_queries': return setSasQueriesFile(file);
+      case 'view_sql':         return setSasQueriesFile(file);
       case 'view_deviations':  return setDeviationFile(file);
       case 'view_issue':       return setIssueViewText(file.issueComment);
       default: break;
@@ -194,6 +202,7 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
         status: 'pyspark_uploaded',
         pysparkFile: uploadedFile.fileName || uploadedFile.name,
         pysparkUploadId: uploadId,
+        pysparkSqlQuery: uploadedFile.sqlQuery || null,
       });
     } else {
       onUpdateFile(uploadModal.file.id, {
