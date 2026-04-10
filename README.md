@@ -11,6 +11,45 @@ Full-stack tool for validating PySpark and SAS output files. The developer runs 
 
 ---
 
+## User Flow Diagram
+
+```mermaid
+flowchart TD
+    subgraph DEV["👨‍💻 Developer"]
+        D1([Start]) --> D2[Upload File List CSV]
+        D2 --> D3[Upload PySpark Output\n+ paste SQL query]
+        D3 --> D4[Mark UAT Ready]
+        D9[Re-upload PySpark\nwith fix] --> D3
+    end
+
+    subgraph BU["👤 Business User"]
+        B1[Start UAT] --> B2[View SQL\n& copy it]
+        B2 --> B3[Run SQL in SAS\nenvironment]
+        B3 --> B4[Upload SAS Output]
+        B4 --> B5[Run Validation]
+        B5 --> B6{Review\nMetrics}
+        B6 -->|Looks good| B7[Approve UAT ✓]
+        B6 -->|Deviations found| B8[Report Issue]
+    end
+
+    subgraph END["📦 Outcome"]
+        E1[Move to Production]
+        E2[Delete Record]
+    end
+
+    D4 -->|Notifies| B1
+    B8 -->|Issue sent to developer| D9
+    B7 --> D5{Developer\naction}
+    D5 -->|Ship it| E1
+    D5 -->|Discard| E2
+
+    style DEV fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+    style BU  fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style END fill:#faf5ff,stroke:#7c3aed,color:#4c1d95
+```
+
+---
+
 ## Quick Start
 
 ### Prerequisites
