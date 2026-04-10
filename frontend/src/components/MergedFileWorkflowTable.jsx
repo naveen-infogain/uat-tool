@@ -90,12 +90,7 @@ const ActionCell = ({ file, role, onAction }) => {
       case 'compared':
         return <span className="act-waiting">Awaiting Business User</span>;
       case 'uat_done':
-        return (
-          <div className="act-group">
-            <button className="act-btn complete-outline" onClick={() => onAction(file, 'move_to_production_single')}>Move to Production</button>
-            <button className="act-btn danger" onClick={() => onAction(file, 'delete')}>Delete</button>
-          </div>
-        );
+        return <button className="act-btn complete-outline" onClick={() => onAction(file, 'move_to_production_single')}>Move to Production</button>;
       case 'issue_reported':
         return <button className="act-btn issue" onClick={() => onAction(file, 'view_issue')}>View Issue</button>;
       default:
