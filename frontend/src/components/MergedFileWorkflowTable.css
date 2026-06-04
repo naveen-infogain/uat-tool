@@ -433,6 +433,88 @@
   white-space: nowrap;
 }
 
+.act-in-prod {
+  font-size: 12px;
+  color: #7e22ce;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.act-btn.descope {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.act-btn.descope:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+}
+
+.act-btn.approve {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.act-btn.approve:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+/* ── Direct Approve confirm modal ────────────────────────────────── */
+.approve-confirm-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px;
+  width: 460px;
+  max-width: 96vw;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
+.acm-icon {
+  width: 56px;
+  height: 56px;
+  background: #f0fdf4;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.acm-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.acm-desc {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.btn-approve {
+  padding: 9px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-approve:hover {
+  background: #15803d;
+}
+
 /* ── Kebab / Select cell ─────────────────────────────────────────── */
 .select-cell {
   display: flex;

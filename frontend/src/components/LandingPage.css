@@ -1,0 +1,212 @@
+/* ── Landing shell ───────────────────────────────────────────────── */
+.landing {
+  min-height: calc(100vh - 60px);
+  background: #f1f5f9;
+}
+
+.landing-hero {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  color: #fff;
+  padding: 48px 40px 40px;
+  text-align: center;
+}
+
+.landing-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.landing-subtitle {
+  font-size: 15px;
+  color: rgba(255,255,255,0.78);
+  font-weight: 400;
+}
+
+.landing-body {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px 32px 60px;
+}
+
+/* ── Section ─────────────────────────────────────────────────────── */
+.section-block {
+  margin-bottom: 40px;
+}
+
+.section-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.empty-hint {
+  color: #94a3b8;
+  font-size: 14px;
+  padding: 24px 0;
+}
+
+/* ── Global stats row ────────────────────────────────────────────── */
+.global-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 22px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  border-left: 4px solid transparent;
+  transition: transform 0.13s, box-shadow 0.13s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-total     { border-color: #94a3b8; } .stat-total .stat-value     { color: #1e293b; }
+.stat-progress  { border-color: #3b82f6; } .stat-progress .stat-value  { color: #2563eb; }
+.stat-done      { border-color: #22c55e; } .stat-done .stat-value      { color: #16a34a; }
+.stat-issues    { border-color: #ef4444; } .stat-issues .stat-value    { color: #dc2626; }
+.stat-production{ border-color: #a855f7; } .stat-production .stat-value{ color: #9333ea; }
+.stat-pct       { border-color: #f59e0b; } .stat-pct .stat-value       { color: #d97706; }
+
+/* ── BU Grid ─────────────────────────────────────────────────────── */
+.bu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+/* ── BU Card ─────────────────────────────────────────────────────── */
+.bu-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  cursor: pointer;
+  position: relative;
+  border: 2px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  outline: none;
+}
+
+.bu-card:hover,
+.bu-card:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.13);
+  transform: translateY(-3px);
+}
+
+.bu-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.bu-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 10px;
+}
+
+.bu-total-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.bu-progress-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.bu-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.bu-pct-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+/* Mini stat chips */
+.bu-mini-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-right: 24px;
+}
+
+.bu-stat {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 9px;
+}
+
+.bu-stat-progress  { background: #dbeafe; color: #1d4ed8; }
+.bu-stat-done      { background: #dcfce7; color: #15803d; }
+.bu-stat-issue     { background: #fee2e2; color: #b91c1c; }
+.bu-stat-prod      { background: #f3e8ff; color: #7e22ce; }
+.bu-stat-ns        { background: #f1f5f9; color: #64748b; }
+
+/* Arrow icon */
+.bu-card-arrow {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  transition: color 0.15s, right 0.15s;
+}
+
+.bu-card:hover .bu-card-arrow {
+  color: #2563eb;
+  right: 14px;
+}

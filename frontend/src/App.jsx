@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { MergedFileWorkflowTable } from './components/MergedFileWorkflowTable';
+import { LandingPage } from './components/LandingPage';
+import { ALLOWED_BUSINESS_UNIT_SET } from './constants/businessUnits';
 import './App.css';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -11,6 +13,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
+  // null = landing page; string = BU detail view
+  const [selectedBU, setSelectedBU] = useState(null);
+
+  const visibleFiles = files.filter(f => ALLOWED_BUSINESS_UNIT_SET.has(f.department || ''));
 
   // ── Load all workflow files from DB on mount ──────────────────────────────
   useEffect(() => {
@@ -65,14 +71,18 @@ function App() {
     }
   }, []);
 
-  // ── Move to production = delete from DB ──────────────────────────────────
+  // ── Move to production = set status, keep in table ──────────────────────
   const handleMoveToProduction = useCallback(async (ids) => {
     const toMove = ids || selectedIds;
-    setFiles(prev => prev.filter(f => !toMove.includes(f.id)));
+    setFiles(prev => prev.map(f => toMove.includes(f.id) ? { ...f, status: 'production' } : f));
     setSelectedIds(prev => prev.filter(id => !toMove.includes(id)));
     await Promise.all(
       toMove.map(id =>
-        fetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error)
+        fetch(`${API}/workflow-files/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'production' }),
+        }).catch(console.error)
       )
     );
   }, [selectedIds]);
@@ -84,7 +94,9 @@ function App() {
     await fetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error);
   }, []);
 
-  const filteredFiles = files.filter(f => {
+  const filteredFiles = visibleFiles.filter(f => {
+    // When in BU view, scope to the selected BU first
+    if (selectedBU && f.department !== selectedBU) return false;
     const q = searchQuery.toLowerCase();
     return (
       (f.department || '').toLowerCase().includes(q) ||
@@ -95,7 +107,7 @@ function App() {
   });
 
   const canMoveToProduction = selectedIds.length > 0 &&
-    selectedIds.every(id => files.find(f => f.id === id)?.status === 'uat_done');
+    selectedIds.every(id => visibleFiles.find(f => f.id === id)?.status === 'uat_done');
 
   if (loading) {
     return (
@@ -107,6 +119,28 @@ function App() {
     );
   }
 
+  // ── Landing page (no BU selected) ────────────────────────────────────────
+  if (!selectedBU) {
+    return (
+      <div className="app">
+        <Header
+          role={role}
+          onRoleChange={setRole}
+          searchQuery=""
+          onSearchChange={() => {}}
+          onMoveToProduction={null}
+          canMoveToProduction={false}
+          selectedBU={null}
+          onBackToLanding={null}
+        />
+        <main className="app-main">
+          <LandingPage files={visibleFiles} onSelectBU={bu => { setSelectedBU(bu); setSearchQuery(''); setSelectedIds([]); }} />
+        </main>
+      </div>
+    );
+  }
+
+  // ── BU detail view ────────────────────────────────────────────────────────
   return (
     <div className="app">
       <Header
@@ -116,6 +150,8 @@ function App() {
         onSearchChange={setSearchQuery}
         onMoveToProduction={() => handleMoveToProduction(selectedIds)}
         canMoveToProduction={canMoveToProduction}
+        selectedBU={selectedBU}
+        onBackToLanding={() => { setSelectedBU(null); setSearchQuery(''); setSelectedIds([]); }}
       />
       <main className="app-main">
         <MergedFileWorkflowTable

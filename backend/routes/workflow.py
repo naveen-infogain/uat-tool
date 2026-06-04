@@ -1,12 +1,17 @@
 """
 Workflow file routes — persist the UAT file list to the database.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 from db import get_db
 from models import WorkflowFile
+from services.notification import (
+    notify_uat_ready,
+    notify_issue_reported,
+    notify_uat_approved,
+)
 
 router = APIRouter()
 
@@ -32,6 +37,7 @@ def _to_dict(wf: WorkflowFile) -> dict:
         "sasFile": extras.get("sasFile"),
         "pysparkSqlQuery": extras.get("pysparkSqlQuery"),
         "comparisonResult": extras.get("comparisonResult"),
+        "issueAttachment": extras.get("issueAttachment"),
     }
 
 
@@ -56,6 +62,7 @@ class WorkflowFileUpdate(BaseModel):
     sasFile: Optional[str] = None
     pysparkSqlQuery: Optional[str] = None
     comparisonResult: Optional[Dict[str, Any]] = None
+    issueAttachment: Optional[Dict[str, Any]] = None  # { name, type, dataUrl }
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -89,11 +96,18 @@ def add_workflow_files(rows: List[WorkflowFileCreate], db: Session = Depends(get
 
 
 @router.patch("/workflow-files/{file_id}")
-def update_workflow_file(file_id: int, updates: WorkflowFileUpdate, db: Session = Depends(get_db)):
+def update_workflow_file(
+    file_id: int,
+    updates: WorkflowFileUpdate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """Patch a workflow file's status or upload references."""
     wf = db.query(WorkflowFile).filter(WorkflowFile.id == file_id).first()
     if not wf:
         raise HTTPException(status_code=404, detail="Workflow file not found")
+
+    previous_status = wf.status
 
     if updates.status is not None:
         wf.status = updates.status
@@ -116,10 +130,27 @@ def update_workflow_file(file_id: int, updates: WorkflowFileUpdate, db: Session 
         extras["pysparkSqlQuery"] = updates.pysparkSqlQuery
     if updates.comparisonResult is not None:
         extras["comparisonResult"] = updates.comparisonResult
+    if updates.issueAttachment is not None:
+        extras["issueAttachment"] = updates.issueAttachment
     wf.extras = extras
 
     db.commit()
     db.refresh(wf)
+
+    # Fire notifications in the background when status transitions to a key state
+    new_status = wf.status
+    if updates.status is not None and new_status != previous_status:
+        file_name = wf.file_name
+        department = wf.department
+        if new_status == "uat_ready":
+            background_tasks.add_task(notify_uat_ready, file_name, department)
+        elif new_status == "issue_reported":
+            background_tasks.add_task(
+                notify_issue_reported, file_name, department, wf.issue_comment
+            )
+        elif new_status == "uat_done":
+            background_tasks.add_task(notify_uat_approved, file_name, department)
+
     return _to_dict(wf)
 
 

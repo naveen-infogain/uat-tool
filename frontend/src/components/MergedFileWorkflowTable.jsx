@@ -3,6 +3,7 @@ import { UploadModal } from './UploadModal';
 import { UploadFileListModal } from './UploadFileListModal';
 import { SASQueriesModal } from './SASQueriesModal';
 import { IssueModal } from './IssueModal';
+import { IssueViewModal } from './IssueViewModal';
 import { DeviationModal } from './DeviationModal';
 import './MergedFileWorkflowTable.css';
 
@@ -75,7 +76,10 @@ const ActionCell = ({ file, role, onAction }) => {
   }
 
   if (status === 'production') {
-    return <button className="act-btn complete" disabled>✓ In Production</button>;
+    if (role === 'developer') {
+      return <button className="act-btn descope" onClick={() => onAction(file, 'descope')}>Descope</button>;
+    }
+    return <span className="act-in-prod">✓ In Production</span>;
   }
 
   if (role === 'developer') {
@@ -104,7 +108,12 @@ const ActionCell = ({ file, role, onAction }) => {
     case 'pyspark_uploaded':
       return <span className="act-waiting">Awaiting Developer</span>;
     case 'uat_ready':
-      return <button className="act-btn primary" onClick={() => onAction(file, 'start_uat')}>Start UAT</button>;
+      return (
+        <div className="act-group">
+          <button className="act-btn primary" onClick={() => onAction(file, 'start_uat')}>Start UAT</button>
+          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
+        </div>
+      );
     case 'uat_in_progress':
       return (
         <div className="act-group">
@@ -112,14 +121,25 @@ const ActionCell = ({ file, role, onAction }) => {
             <button className="act-btn secondary" onClick={() => onAction(file, 'view_sql')}>View SQL</button>
           )}
           <button className="act-btn primary" onClick={() => onAction(file, 'upload_sas')}>Upload SAS Output</button>
+          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
         </div>
       );
     case 'sas_uploaded':
-      return <button className="act-btn primary" onClick={() => onAction(file, 'compare')}>Run Validation</button>;
+      return (
+        <div className="act-group">
+          <button className="act-btn primary" onClick={() => onAction(file, 'compare')}>Run Validation</button>
+          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
+        </div>
+      );
     case 'compared':
-      return <button className="act-btn primary" onClick={() => onAction(file, 'view_deviations')}>Review Validation</button>;
+      return (
+        <div className="act-group">
+          <button className="act-btn primary" onClick={() => onAction(file, 'view_deviations')}>Review Validation</button>
+          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
+        </div>
+      );
     case 'uat_done':
-      return <button className="act-btn complete-outline" onClick={() => onAction(file, 'move_to_production_single')}>Move to Production</button>;
+      return <span className="act-waiting">Awaiting Production Move</span>;
     case 'issue_reported':
       return <span className="act-issue-sent">Issue Sent to Developer</span>;
     default:
@@ -134,8 +154,9 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
   const [sasQueriesFile, setSasQueriesFile] = useState(null);
   const [issueFile, setIssueFile]           = useState(null);
   const [deviationFile, setDeviationFile]   = useState(null);
-  const [issueViewText, setIssueViewText]   = useState(null); // view-only issue display
-  const [menuOpenId, setMenuOpenId]         = useState(null);
+  const [issueViewFile, setIssueViewFile]     = useState(null); // view-only issue display
+  const [approveConfirmFile, setApproveConfirmFile] = useState(null); // direct approve confirm
+  const [menuOpenId, setMenuOpenId]           = useState(null);
   const [comparing, setComparing]           = useState(false); // loading state for comparison
   const [comparisonMode, setComparisonMode] = useState('loose'); // 'exact' | 'loose' | 'structural'
 
@@ -144,6 +165,7 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
     switch (type) {
       case 'mark_na':                  return onUpdateFile(file.id, { status: 'not_applicable' });
       case 'restore':                  return onUpdateFile(file.id, { status: 'not_started' });
+      case 'descope':                  return onUpdateFile(file.id, { status: 'uat_done' });
       case 'mark_uat_ready':           return onUpdateFile(file.id, { status: 'uat_ready' });
       case 'start_uat':                return onUpdateFile(file.id, { status: 'uat_in_progress' });
       case 'compare':                  return handleCompare(file);
@@ -153,8 +175,9 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
       case 'view_sql':                 return handleViewSql(file);
       case 'delete':                   return onDeleteFile(file.id);
       case 'move_to_production_single': return onMoveToProduction([file.id]);
-      case 'view_deviations':  return setDeviationFile(file);
-      case 'view_issue':       return setIssueViewText(file.issueComment);
+      case 'view_deviations':   return setDeviationFile(file);
+      case 'view_issue':        return setIssueViewFile(file);
+      case 'approve_direct':    return setApproveConfirmFile(file);
       default: break;
     }
   };
@@ -258,8 +281,12 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
     setIssueFile(resolvedDeviationFile);
   };
 
-  const handleIssueSubmit = (comment) => {
-    onUpdateFile(issueFile.id, { status: 'issue_reported', issueComment: comment });
+  const handleIssueSubmit = (comment, attachment) => {
+    onUpdateFile(issueFile.id, {
+      status: 'issue_reported',
+      issueComment: comment,
+      issueAttachment: attachment || null,
+    });
     setIssueFile(null);
   };
 
@@ -409,12 +436,40 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
         />
       )}
 
-      {issueViewText !== null && (
-        <div className="modal-overlay" onClick={() => setIssueViewText(null)}>
-          <div className="issue-view-box" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" style={{ position: 'absolute', top: 14, right: 16 }} onClick={() => setIssueViewText(null)}>✕</button>
-            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#0f172a' }}>Issue Comment</h3>
-            <p style={{ margin: 0, fontSize: 14, color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{issueViewText}</p>
+      {issueViewFile && (
+        <IssueViewModal
+          file={issueViewFile}
+          onClose={() => setIssueViewFile(null)}
+        />
+      )}
+
+      {approveConfirmFile && (
+        <div className="modal-overlay" onClick={() => setApproveConfirmFile(null)}>
+          <div className="approve-confirm-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setApproveConfirmFile(null)}>✕</button>
+            <div className="acm-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h2 className="acm-title">Approve without SAS Upload?</h2>
+            <p className="acm-desc">
+              You are approving <strong>{approveConfirmFile.fileName}</strong> directly.<br/>
+              The file will be marked as <strong>UAT Done</strong> without SAS validation.
+            </p>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setApproveConfirmFile(null)}>Cancel</button>
+              <button
+                className="btn-approve"
+                onClick={() => {
+                  onUpdateFile(approveConfirmFile.id, { status: 'uat_done' });
+                  setApproveConfirmFile(null);
+                }}
+              >
+                Yes, Approve
+              </button>
+            </div>
           </div>
         </div>
       )}

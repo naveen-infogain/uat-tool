@@ -13,3 +13,4 @@ pyreadstat==1.2.5
 aiofiles==23.2.1
 pytest==7.4.3
 sqlalchemy-utils==0.41.1
+requests==2.32.3

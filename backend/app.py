@@ -2,6 +2,7 @@
 FastAPI main application for the UAT Data Comparison Tool.
 """
 import os
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
@@ -10,6 +11,14 @@ from routes.upload import router as upload_router
 from routes.compare import router as compare_router
 from routes.export import router as export_router
 from routes.workflow import router as workflow_router
+
+# Configure logging so notification and service logs appear in the uvicorn console
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="UAT Data Comparison Tool",

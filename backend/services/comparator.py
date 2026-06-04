@@ -27,6 +27,20 @@ class DataComparator:
         self.data2 = data2
         self.mode = mode
         self.comparison_result = None
+
+    def _shared_headers(self):
+        """Return headers present in both files, preserving file1 order."""
+        headers1 = self.data1.get('headers', [])
+        headers2 = set(self.data2.get('headers', []))
+        return [header for header in headers1 if header in headers2]
+
+    def _all_headers(self):
+        """Return the union of headers from both files, preserving display order."""
+        headers = list(self.data1.get('headers', []))
+        for header in self.data2.get('headers', []):
+            if header not in headers:
+                headers.append(header)
+        return headers
     
     def compare(self):
         """Execute comparison and return detailed results."""
@@ -54,11 +68,13 @@ class DataComparator:
         """Compare column headers."""
         headers1 = self.data1.get('headers', [])
         headers2 = self.data2.get('headers', [])
+        shared_headers = self._shared_headers()
         
         return {
             'file1_headers': headers1,
             'file2_headers': headers2,
-            'matched_count': sum(1 for h1 in headers1 if h1 in headers2),
+            'shared_headers': shared_headers,
+            'matched_count': len(shared_headers),
             'missing_in_file2': [h for h in headers1 if h not in headers2],
             'extra_in_file2': [h for h in headers2 if h not in headers1],
             'total_columns': max(len(headers1), len(headers2))
@@ -116,23 +132,29 @@ class DataComparator:
     
     def _calculate_row_similarity(self, row1, row2):
         """Calculate similarity between two rows."""
+        shared_headers = self._shared_headers()
+        if shared_headers:
+            value_pairs = [(row1.get(header, ''), row2.get(header, '')) for header in shared_headers]
+            total_cells = len(shared_headers)
+        else:
+            headers = self._all_headers()
+            value_pairs = [(row1.get(header, ''), row2.get(header, '')) for header in headers]
+            total_cells = len(headers)
+
         if self.mode == 'exact':
-            matching_cells = sum(1 for v1, v2 in zip(row1.values(), row2.values()) if v1 == v2)
+            matching_cells = sum(1 for v1, v2 in value_pairs if v1 == v2)
         elif self.mode == 'loose':
-            matching_cells = sum(1 for v1, v2 in zip(row1.values(), row2.values()) 
-                                if self._loose_match(v1, v2))
+            matching_cells = sum(1 for v1, v2 in value_pairs if self._loose_match(v1, v2))
         else:  # structural
-            matching_cells = sum(1 for v1, v2 in zip(row1.values(), row2.values()) 
-                                if self._structural_match(v1, v2))
+            matching_cells = sum(1 for v1, v2 in value_pairs if self._structural_match(v1, v2))
         
-        total_cells = max(len(row1), len(row2))
         return matching_cells / total_cells if total_cells > 0 else 0
     
     def _get_cell_differences(self, row1, row2):
         """Identify cell-level differences between rows."""
         differences = []
-        
-        for key in row1:
+
+        for key in self._all_headers():
             v1 = row1.get(key, '')
             v2 = row2.get(key, '')
             
@@ -171,6 +193,7 @@ class DataComparator:
         """Calculate comparison statistics."""
         total_rows = max(row_diff['total_rows_file1'], row_diff['total_rows_file2'])
         matched_rows = len(row_diff['matched_rows'])
+        comparable_columns = max(header_diff['matched_count'], 1)
         
         return {
             'total_rows_compared': total_rows,
@@ -180,7 +203,9 @@ class DataComparator:
             'match_percentage': round((matched_rows / total_rows * 100) if total_rows > 0 else 0, 2),
             'total_columns': header_diff['total_columns'],
             'matched_columns': header_diff['matched_count'],
-            'column_match_percentage': round((header_diff['matched_count'] / max(header_diff['total_columns'], 1) * 100), 2)
+            'comparable_columns': header_diff['matched_count'],
+            'column_match_percentage': round((header_diff['matched_count'] / max(header_diff['total_columns'], 1) * 100), 2),
+            'row_match_basis': comparable_columns,
         }
     
     def _calculate_quality_score(self, stats):

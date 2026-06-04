@@ -76,3 +76,31 @@ class TestDataComparator:
         header_diff = result['headers']
         assert header_diff['file1_headers'] == header_diff['file2_headers']
         assert header_diff['matched_count'] == 3
+
+    def test_compare_rows_with_different_columns_uses_shared_headers(self):
+        """Rows should still match when files share key columns but differ in schema."""
+        data1 = {
+            'headers': ['Name', 'Age', 'City'],
+            'data': [
+                {'Name': 'Alice', 'Age': '30', 'City': 'NYC'},
+            ],
+        }
+        data2 = {
+            'headers': ['City', 'Name', 'Country'],
+            'data': [
+                {'City': 'NYC', 'Name': 'Alice', 'Country': 'USA'},
+            ],
+        }
+
+        comp = DataComparator(data1, data2, mode='exact')
+        result = comp.compare()
+
+        assert result['headers']['shared_headers'] == ['Name', 'City']
+        assert result['headers']['missing_in_file2'] == ['Age']
+        assert result['headers']['extra_in_file2'] == ['Country']
+        assert len(result['rows']['matched_rows']) == 1
+        assert result['rows']['matched_rows'][0]['similarity'] == 1.0
+        assert result['rows']['matched_rows'][0]['differences'] == [
+            {'column': 'Age', 'file1_value': '30', 'file2_value': ''},
+            {'column': 'Country', 'file1_value': '', 'file2_value': 'USA'},
+        ]

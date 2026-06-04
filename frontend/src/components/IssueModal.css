@@ -2,8 +2,10 @@
   background: #fff;
   border-radius: 16px;
   padding: 36px;
-  width: 540px;
+  width: 560px;
   max-width: 96vw;
+  max-height: 92vh;
+  overflow-y: auto;
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
@@ -84,6 +86,106 @@
 .btn-danger:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ── Attachment drop zone ─────────────────────────────────────────── */
+.field-optional {
+  font-weight: 400;
+  color: #94a3b8;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.attach-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 4px;
+  background: #f8fafc;
+}
+
+.attach-zone:hover,
+.attach-zone.drag-over {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.attach-zone.has-file {
+  border-style: solid;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  cursor: default;
+}
+
+.attach-hint {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.attach-browse {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.attach-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.attach-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.attach-img-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.attach-file-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.attach-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.attach-remove {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.attach-remove:hover {
+  color: #b91c1c;
 }
 
 /* Shared modal base styles */

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\satti.naveen\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-satti-naveen-uat-tool\\\\af9f643a-89f3-4d83-9ed4-28147f94d9c5\\\\tasks\\\\b702gozwp.output\" -Raw)",
+      "Bash(.\\\\venv\\\\Scripts\\\\uvicorn.exe app:app --reload --port 8000)",
+      "Bash(Select-Object -First 20)",
+      "Bash(.\\\\venv\\\\Scripts\\\\python.exe -c \"import uvicorn; print\\('uvicorn ok'\\)\")",
+      "Bash(.\\\\venv\\\\Scripts\\\\python.exe -c \"import uvicorn; print\\('ok'\\)\")"
+    ]
+  }
+}

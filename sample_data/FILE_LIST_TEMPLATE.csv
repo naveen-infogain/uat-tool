@@ -1,7 +1,51 @@
 Department,File Name,File Path,Owner,Ready for UAT,Where to Save?
-Finance,Q1_Payroll_2024,/data/payroll/q1,john.doe@company.com,Yes,Finance/Q1_Payroll_2024/
-Finance,Q1_Invoices_2024,/data/invoices/q1,sarah.smith@company.com,Yes,Finance/Q1_Invoices_2024/
-HR,Employee_Records_2024,/data/hr/employees,mike.johnson@company.com,Yes,HR/Employee_Records_2024/
-Accounting,Trial_Balance_Q1,/data/accounting/tb,jessica.lee@company.com,Yes,Accounting/Trial_Balance_Q1/
-Marketing,Campaign_Analytics_Q1,/data/marketing/analytics,david.brown@company.com,No,Marketing/Campaign_Analytics_Q1/
-Operations,Inventory_Count_2024,/data/ops/inventory,emma.wilson@company.com,Yes,Operations/Inventory_Count_2024/
+EU Marketing,EU_Marketing_Campaign_Review_Q1,/data/eu_marketing/campaign_review_q1,eu.marketing@company.com,Yes,EU Marketing/Q1_2024/
+EU Marketing,EU_Marketing_Regional_Split,/data/eu_marketing/regional_split,eu.marketing@company.com,Yes,EU Marketing/Regional/
+EU Marketing,EU_Marketing_Customer_Segment,/data/eu_marketing/customer_segment,eu.marketing@company.com,No,EU Marketing/Segments/
+EU Marketing,EU_Marketing_Channel_Performance,/data/eu_marketing/channel_perf,eu.marketing@company.com,Yes,EU Marketing/Channels/
+EU Marketing,EU_Marketing_Budget_Allocation,/data/eu_marketing/budget_alloc,eu.marketing@company.com,Yes,EU Marketing/Budget/
+Express,Express_Shipment_Summary_Jan,/data/express/shipment_summary_jan,express.ops@company.com,Yes,Express/2024_Jan/
+Express,Express_Shipment_Summary_Feb,/data/express/shipment_summary_feb,express.ops@company.com,Yes,Express/2024_Feb/
+Express,Express_Delivery_Times_Analysis,/data/express/delivery_times,express.ops@company.com,Yes,Express/Analytics/
+Express,Express_Route_Optimization,/data/express/route_optimization,express.ops@company.com,No,Express/Routes/
+Express,Express_Performance_Metrics,/data/express/performance_metrics,express.ops@company.com,Yes,Express/Metrics/
+Freight (On Hold),Freight_Backlog_Assessment_Q1,/data/freight/backlog_assessment_q1,freight.team@company.com,No,Freight (On Hold)/Q1_Assessment/
+Freight (On Hold),Freight_Pending_Shipments,/data/freight/pending_shipments,freight.team@company.com,No,Freight (On Hold)/Pending/
+Freight (On Hold),Freight_Cost_Analysis,/data/freight/cost_analysis,freight.team@company.com,No,Freight (On Hold)/Cost/
+Freight (On Hold),Freight_Carrier_Performance,/data/freight/carrier_perf,freight.team@company.com,No,Freight (On Hold)/Carriers/
+Freight (On Hold),Freight_Exception_Log,/data/freight/exception_log,freight.team@company.com,No,Freight (On Hold)/Exceptions/
+Mktg. POC,Marketing_POC_Source_List_Primary,/data/marketing_poc/source_list_primary,mktg.poc@company.com,Yes,Mktg. POC/Primary_Sources/
+Mktg. POC,Marketing_POC_Lead_Generation,/data/marketing_poc/lead_generation,mktg.poc@company.com,Yes,Mktg. POC/Leads/
+Mktg. POC,Marketing_POC_Conversion_Rates,/data/marketing_poc/conversion_rates,mktg.poc@company.com,Yes,Mktg. POC/Conversions/
+Mktg. POC,Marketing_POC_Campaign_Tracker,/data/marketing_poc/campaign_tracker,mktg.poc@company.com,No,Mktg. POC/Campaigns/
+Mktg. POC,Marketing_POC_ROI_Analysis,/data/marketing_poc/roi_analysis,mktg.poc@company.com,Yes,Mktg. POC/ROI/
+Mktg. Full Inventory,Marketing_Full_Inventory_SKU_List,/data/marketing_full/sku_list,mktg.inventory@company.com,Yes,Mktg. Full Inventory/SKUs/
+Mktg. Full Inventory,Marketing_Full_Inventory_Stock_Levels,/data/marketing_full/stock_levels,mktg.inventory@company.com,Yes,Mktg. Full Inventory/Stock/
+Mktg. Full Inventory,Marketing_Full_Inventory_Movement,/data/marketing_full/inventory_movement,mktg.inventory@company.com,Yes,Mktg. Full Inventory/Movement/
+Mktg. Full Inventory,Marketing_Full_Inventory_Variance,/data/marketing_full/inventory_variance,mktg.inventory@company.com,Yes,Mktg. Full Inventory/Variance/
+Mktg. Full Inventory,Marketing_Full_Inventory_Aging_Report,/data/marketing_full/aging_report,mktg.inventory@company.com,No,Mktg. Full Inventory/Aging/
+Ground Ph.1&2,Ground_Phase12_Comparison_Shipments,/data/ground/phase12_comp_shipments,ground.team@company.com,Yes,Ground Ph.1&2/Shipments/
+Ground Ph.1&2,Ground_Phase12_Delivery_Performance,/data/ground/phase12_delivery_perf,ground.team@company.com,Yes,Ground Ph.1&2/Delivery/
+Ground Ph.1&2,Ground_Phase12_Coverage_Map,/data/ground/phase12_coverage,ground.team@company.com,Yes,Ground Ph.1&2/Coverage/
+Ground Ph.1&2,Ground_Phase12_Cost_Comparison,/data/ground/phase12_cost_comparison,ground.team@company.com,Yes,Ground Ph.1&2/Costs/
+Ground Ph.1&2,Ground_Phase12_Exception_Tracking,/data/ground/phase12_exceptions,ground.team@company.com,No,Ground Ph.1&2/Exceptions/
+AirOps VIYA,AirOps_VIYA_Runbook_Operations,/data/airops/viya_runbook_ops,airops.viya@company.com,Yes,AirOps VIYA/Operations/
+AirOps VIYA,AirOps_VIYA_Capacity_Planning,/data/airops/viya_capacity,airops.viya@company.com,Yes,AirOps VIYA/Capacity/
+AirOps VIYA,AirOps_VIYA_Flight_Schedule,/data/airops/viya_flights,airops.viya@company.com,Yes,AirOps VIYA/Flights/
+AirOps VIYA,AirOps_VIYA_Crew_Management,/data/airops/viya_crew,airops.viya@company.com,Yes,AirOps VIYA/Crew/
+AirOps VIYA,AirOps_VIYA_Maintenance_Log,/data/airops/viya_maintenance,airops.viya@company.com,No,AirOps VIYA/Maintenance/
+AirOps GRID POC,AirOps_GRID_POC_Baseline_Metrics,/data/airops/grid_poc_baseline_metrics,airops.grid.poc@company.com,Yes,AirOps GRID POC/Baseline/
+AirOps GRID POC,AirOps_GRID_POC_Load_Analysis,/data/airops/grid_poc_load,airops.grid.poc@company.com,Yes,AirOps GRID POC/Load/
+AirOps GRID POC,AirOps_GRID_POC_Network_Map,/data/airops/grid_poc_network,airops.grid.poc@company.com,Yes,AirOps GRID POC/Network/
+AirOps GRID POC,AirOps_GRID_POC_Routing_Optimization,/data/airops/grid_poc_routing,airops.grid.poc@company.com,Yes,AirOps GRID POC/Routing/
+AirOps GRID POC,AirOps_GRID_POC_Pilot_Results,/data/airops/grid_poc_pilot_results,airops.grid.poc@company.com,No,AirOps GRID POC/Results/
+AirOps GRID Full,AirOps_GRID_Full_Inventory_Complete,/data/airops/grid_full_inventory_complete,airops.grid.full@company.com,Yes,AirOps GRID Full/Inventory/
+AirOps GRID Full,AirOps_GRID_Full_Regional_Distribution,/data/airops/grid_full_regional,airops.grid.full@company.com,Yes,AirOps GRID Full/Regional/
+AirOps GRID Full,AirOps_GRID_Full_Network_Topology,/data/airops/grid_full_topology,airops.grid.full@company.com,Yes,AirOps GRID Full/Topology/
+AirOps GRID Full,AirOps_GRID_Full_Performance_Metrics,/data/airops/grid_full_performance,airops.grid.full@company.com,Yes,AirOps GRID Full/Performance/
+AirOps GRID Full,AirOps_GRID_Full_Capacity_Report,/data/airops/grid_full_capacity,airops.grid.full@company.com,No,AirOps GRID Full/Capacity/
+TNT Mainframe,TNT_Mainframe_Extract_Full,/data/tnt/mainframe_extract_full,tnt.mainframe@company.com,Yes,TNT Mainframe/Full_Extract/
+TNT Mainframe,TNT_Mainframe_Transaction_Log,/data/tnt/mainframe_transactions,tnt.mainframe@company.com,Yes,TNT Mainframe/Transactions/
+TNT Mainframe,TNT_Mainframe_Account_Master,/data/tnt/mainframe_accounts,tnt.mainframe@company.com,Yes,TNT Mainframe/Accounts/
+TNT Mainframe,TNT_Mainframe_Daily_Settlement,/data/tnt/mainframe_settlement,tnt.mainframe@company.com,Yes,TNT Mainframe/Settlement/
+TNT Mainframe,TNT_Mainframe_Archive_Records,/data/tnt/mainframe_archive,tnt.mainframe@company.com,No,TNT Mainframe/Archive/

@@ -2,7 +2,7 @@
 Database connection and session management.
 """
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy_utils import database_exists, create_database
 
@@ -41,3 +41,21 @@ def get_db():
 def init_db():
     """Initialize database tables."""
     Base.metadata.create_all(bind=engine)
+    _ensure_workflow_schema()
+
+
+def _ensure_workflow_schema():
+    """Apply lightweight schema fixes for existing local databases."""
+    inspector = inspect(engine)
+    if not inspector.has_table("workflow_files"):
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("workflow_files")}
+    if "extras" in columns:
+        return
+
+    column_type = "JSONB" if engine.dialect.name == "postgresql" else "JSON"
+    with engine.begin() as connection:
+        connection.execute(
+            text(f"ALTER TABLE workflow_files ADD COLUMN extras {column_type}")
+        )
