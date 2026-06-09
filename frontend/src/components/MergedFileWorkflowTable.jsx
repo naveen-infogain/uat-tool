@@ -38,8 +38,8 @@ const getStepStates = (status) => {
 };
 
 const StatusStepFlow = ({ status }) => {
-  if (status === 'not_applicable') {
-    return <span className="step-na-badge">Not Applicable</span>;
+  if (status === 'descoped') {
+    return <span className="step-na-badge">Descoped</span>;
   }
   const s = getStepStates(status);
   return (
@@ -66,16 +66,13 @@ const StatusStepFlow = ({ status }) => {
 const ActionCell = ({ file, role, onAction }) => {
   const { status } = file;
 
-  if (status === 'not_applicable') {
+  if (status === 'descoped') {
     return role === 'developer'
       ? <button className="act-link" onClick={() => onAction(file, 'restore')}>Restore</button>
       : <span className="act-na">—</span>;
   }
 
   if (status === 'production') {
-    if (role === 'developer') {
-      return <button className="act-btn descope" onClick={() => onAction(file, 'descope')}>Descope</button>;
-    }
     return <span className="act-in-prod">✓ In Production</span>;
   }
 
@@ -107,7 +104,7 @@ const ActionCell = ({ file, role, onAction }) => {
       return (
         <div className="act-group">
           <button className="act-btn primary" onClick={() => onAction(file, 'start_uat')}>Start UAT</button>
-          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
+          <button className="act-btn approve" disabled title="Upload SAS output first to enable approval">Approve</button>
         </div>
       );
     case 'uat_in_progress':
@@ -117,7 +114,7 @@ const ActionCell = ({ file, role, onAction }) => {
             <button className="act-btn secondary" onClick={() => onAction(file, 'view_sql')}>View SQL</button>
           )}
           <button className="act-btn primary" onClick={() => onAction(file, 'upload_sas')}>Upload SAS Output</button>
-          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
+          <button className="act-btn approve" disabled title="Upload SAS output first to enable approval">Approve</button>
         </div>
       );
     case 'sas_uploaded':
@@ -127,6 +124,8 @@ const ActionCell = ({ file, role, onAction }) => {
           <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
         </div>
       );
+
+
     case 'compared':
       return (
         <div className="act-group">
@@ -144,9 +143,9 @@ const ActionCell = ({ file, role, onAction }) => {
 };
 
 // ✅ currentDepartment prop add kiya
-export const MergedFileWorkflowTable = ({ 
-  files, role, selectedIds, onSelectChange, 
-  onUpdateFile, onDeleteFile, onMoveToProduction, 
+export const MergedFileWorkflowTable = ({
+  files, role, selectedIds, onSelectChange,
+  onUpdateFile, onDeleteFile, onMoveToProduction,
   onAddFiles,
   currentDepartment  // ✅ NEW
 }) => {
@@ -164,7 +163,7 @@ export const MergedFileWorkflowTable = ({
   const handleAction = (file, type) => {
     setMenuOpenId(null);
     switch (type) {
-      case 'mark_na':                   return onUpdateFile(file.id, { status: 'not_applicable' });
+      case 'mark_na':                   return onUpdateFile(file.id, { status: 'descoped' });
       case 'restore':                   return onUpdateFile(file.id, { status: 'not_started' });
       case 'descope':                   return onUpdateFile(file.id, { status: 'uat_done' });
       case 'mark_uat_ready':            return onUpdateFile(file.id, { status: 'uat_ready' });
@@ -209,10 +208,10 @@ export const MergedFileWorkflowTable = ({
         comparisonId: result.comparison_id,
         comparisonResult: result.comparison_result,
       });
-      setDeviationFile({ 
-        ...file, 
-        comparisonId: result.comparison_id, 
-        comparisonResult: result.comparison_result 
+      setDeviationFile({
+        ...file,
+        comparisonId: result.comparison_id,
+        comparisonResult: result.comparison_result
       });
     } catch (err) {
       alert(`Comparison error: ${err.message}`);
@@ -331,7 +330,7 @@ export const MergedFileWorkflowTable = ({
               <tr
                 key={file.id}
                 className={`merged-row ${
-                  file.status === 'not_applicable' ? 'row-na' : ''
+                  file.status === 'descoped' ? 'row-na' : ''
                 } ${
                   file.status === 'uat_done' || file.status === 'production' ? 'row-done' : ''
                 }`}
@@ -370,8 +369,8 @@ export const MergedFileWorkflowTable = ({
                           {file.status === 'uat_in_progress' && (
                             <button onClick={() => handleAction(file, 'view_sas_queries')}>View SAS Queries</button>
                           )}
-                          {file.status !== 'not_applicable'
-                            ? <button className="kebab-danger" onClick={() => handleAction(file, 'mark_na')}>Mark as N/A</button>
+                          {file.status !== 'descoped'
+                            ? <button className="kebab-danger" onClick={() => handleAction(file, 'mark_na')}>Mark as Descoped</button>
                             : <button onClick={() => handleAction(file, 'restore')}>Restore</button>
                           }
                           <button className="kebab-danger" onClick={() => handleAction(file, 'delete')}>Delete Record</button>
@@ -389,9 +388,9 @@ export const MergedFileWorkflowTable = ({
       {/* ✅ departmentFilter pass kiya */}
       {showAddFiles && (
         <UploadFileListModal
-          onAdd={(rows, deptFilter) => { 
-            onAddFiles(rows, deptFilter); 
-            setShowAddFiles(false); 
+          onAdd={(rows, deptFilter) => {
+            onAddFiles(rows, deptFilter);
+            setShowAddFiles(false);
           }}
           onCancel={() => setShowAddFiles(false)}
           departmentFilter={currentDepartment}  // ✅ KEY CHANGE

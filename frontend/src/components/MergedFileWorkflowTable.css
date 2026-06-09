@@ -457,9 +457,19 @@
   border: 1px solid #bbf7d0;
 }
 
-.act-btn.approve:hover {
+/* hover only when the button is enabled */
+.act-btn.approve:not(:disabled):hover {
   background: #dcfce7;
   border-color: #86efac;
+}
+
+/* disabled = grey, no hover, not-allowed cursor */
+.act-btn.approve:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* ── Direct Approve confirm modal ────────────────────────────────── */

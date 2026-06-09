@@ -18,6 +18,10 @@ async def upload_file(
     file: UploadFile = File(...),
     user_type: str = Form(default="developer"),
     sql_query: str = Form(default=""),
+    bu: str = Form(default=""),
+    workflow_file_path: str = Form(default=""),
+    workflow_file_name: str = Form(default=""),
+    upload_type: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     """Upload a file and store metadata in database."""
@@ -62,8 +66,20 @@ async def upload_file(
                 "duplicate": True,
             }
 
-        # Process file
-        file_info, parsed_data = FileHandler.process(file_bytes, file.filename, settings.upload_folder)
+        # Build structured subfolder: {BU}/{upload_type}
+        subfolder = FileHandler.build_subfolder(bu, workflow_file_path, upload_type)
+
+        # Process file — saves to upload_folder/subfolder/
+        file_info, parsed_data = FileHandler.process(file_bytes, file.filename, settings.upload_folder, subfolder)
+
+        # Build logical display path for pgAdmin: e.g. express/pyspark/Q1_INVOICES_2024
+        clean_name = FileHandler._sanitize_segment(
+            workflow_file_name.rsplit(".", 1)[0] if "." in workflow_file_name else workflow_file_name
+        ) if workflow_file_name else ""
+        if bu and upload_type and clean_name:
+            logical_path = f"{bu}/{upload_type}/{clean_name}"
+        else:
+            logical_path = file_info["file_path"]  # fallback for uploads without context
 
         # Store in database
         upload_id = str(uuid.uuid4())
@@ -72,7 +88,7 @@ async def upload_file(
             file_hash=file_info["file_hash"],
             original_filename=file_info["original_filename"],
             saved_filename=file_info["saved_filename"],
-            file_path=file_info["file_path"],
+            file_path=logical_path,          # human-readable path shown in pgAdmin
             file_size=file_info["file_size"],
             file_type=ext,
             user_type=user_type,
@@ -81,6 +97,11 @@ async def upload_file(
                 "row_count": parsed_data["row_count"],
                 "column_count": parsed_data["column_count"],
                 "headers": parsed_data["headers"],
+                "bu": bu or None,
+                "workflow_file_name": workflow_file_name or None,
+                "workflow_file_path": workflow_file_path or None,
+                "upload_type": upload_type or None,
+                "disk_path": file_info["file_path"],  # actual disk path for comparator
             }
         )
         db.add(uploaded_file)

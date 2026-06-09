@@ -96,6 +96,10 @@ export const UploadModal = ({ type, file, onUpload, onCancel }) => {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('user_type', type === 'pyspark' ? 'developer' : 'client');
+      formData.append('upload_type', type);
+      formData.append('bu', file?.department || '');
+      formData.append('workflow_file_path', file?.filePath || '');
+      formData.append('workflow_file_name', file?.fileName || '');
       if (sqlQuery && config.showSQLQuery) {
         formData.append('sql_query', sqlQuery);
       }

@@ -2,6 +2,7 @@
 File handling service for Excel and CSV file uploads.
 """
 import os
+import re
 import hashlib
 from datetime import datetime
 from pathlib import Path
@@ -14,10 +15,36 @@ class FileHandler:
     ALLOWED_EXTENSIONS = {"xlsx", "xls", "csv", "parquet", "json", "sas7bdat"}
 
     @staticmethod
-    def process(file_bytes: bytes, filename: str, upload_folder: str):
+    def build_subfolder(bu: str, workflow_file_path: str, upload_type: str) -> str:
         """
-        Save raw bytes to disk ONLY if file is new (hash not seen before).
-        If duplicate hash found on disk, reuse existing file.
+        Build a structured subfolder path: {BU}/{file_path_segments}/{upload_type}
+        Example: Express_Shipment/data/reports/pyspark
+        """
+        parts = []
+        if bu:
+            parts.append(FileHandler._sanitize_segment(bu))
+        if workflow_file_path:
+            for seg in re.split(r'[/\\]', workflow_file_path):
+                clean = FileHandler._sanitize_segment(seg)
+                if clean:
+                    parts.append(clean)
+        if upload_type in ("pyspark", "sas"):
+            parts.append(upload_type)
+        return os.path.join(*parts) if parts else ""
+
+    @staticmethod
+    def _sanitize_segment(segment: str) -> str:
+        """Remove characters unsafe for folder names."""
+        segment = segment.strip()
+        segment = re.sub(r'[<>:"|?*]', '_', segment)
+        segment = re.sub(r'\s+', '_', segment)
+        return segment.strip('._')
+
+    @staticmethod
+    def process(file_bytes: bytes, filename: str, upload_folder: str, subfolder: str = ""):
+        """
+        Save raw bytes to disk under upload_folder/subfolder/.
+        Reuses existing file if the same hash is found anywhere under upload_folder.
 
         Returns:
             tuple: (file_info dict, parsed_data dict)
@@ -26,10 +53,10 @@ class FileHandler:
         safe_name = Path(filename).name
         file_hash = hashlib.sha256(file_bytes).hexdigest()
 
-        os.makedirs(upload_folder, exist_ok=True)
+        target_folder = os.path.join(upload_folder, subfolder) if subfolder else upload_folder
+        os.makedirs(target_folder, exist_ok=True)
 
-        # ✅ Check disk for existing file with same hash
-        # (DB check already happens in upload.py — this prevents duplicate disk writes)
+        # Check recursively across all BU/filepath subfolders for duplicate hash
         existing_path = FileHandler._find_by_hash(upload_folder, file_hash)
         if existing_path:
             parsed_data = FileHandler.parse_file(existing_path, ext)
@@ -43,15 +70,14 @@ class FileHandler:
             }
             return file_info, parsed_data
 
-        # 🆕 New file — save to disk
+        # New file — save to structured target folder
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_filename = f"{timestamp}_{safe_name}"
-        file_path = os.path.join(upload_folder, unique_filename)
+        file_path = os.path.join(target_folder, unique_filename)
 
         with open(file_path, "wb") as f:
             f.write(file_bytes)
 
-        # Save hash sidecar to enable disk-level duplicate detection
         with open(file_path + ".hash", "w") as f:
             f.write(file_hash)
 
@@ -70,19 +96,21 @@ class FileHandler:
     @staticmethod
     def _find_by_hash(upload_folder: str, file_hash: str):
         """
-        Scan upload folder for .hash sidecar matching given hash.
-        Returns file path if found, else None.
+        Recursively scan upload_folder (including BU/filepath subfolders)
+        for a .hash sidecar matching the given hash.
+        Returns the file path if found, else None.
         """
         try:
-            for fname in os.listdir(upload_folder):
-                if not fname.endswith(".hash"):
-                    continue
-                hash_path = os.path.join(upload_folder, fname)
-                with open(hash_path, "r") as f:
-                    if f.read().strip() == file_hash:
-                        original_path = hash_path.replace(".hash", "")
-                        if os.path.exists(original_path):
-                            return original_path
+            for root, _dirs, files in os.walk(upload_folder):
+                for fname in files:
+                    if not fname.endswith(".hash"):
+                        continue
+                    hash_path = os.path.join(root, fname)
+                    with open(hash_path, "r") as f:
+                        if f.read().strip() == file_hash:
+                            original_path = hash_path[:-5]  # strip ".hash"
+                            if os.path.exists(original_path):
+                                return original_path
         except Exception:
             pass
         return None
