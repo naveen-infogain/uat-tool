@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import './UploadFileListModal.css';
 
-// Maps flexible column header variants to our internal field names
 const COLUMN_MAP = {
   department:   ['department', 'dept'],
   fileName:     ['file name', 'filename', 'file'],
@@ -27,14 +26,11 @@ function findCol(headers, variants) {
 function parseSheet(worksheet) {
   const raw = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
   if (raw.length < 2) return [];
-
   const headers = raw[0].map(h => normalizeHeader(h));
-
   const cols = {};
   for (const [field, variants] of Object.entries(COLUMN_MAP)) {
     cols[field] = findCol(headers, variants);
   }
-
   return raw.slice(1)
     .filter(row => row.some(cell => cell !== ''))
     .map(row => ({
@@ -47,14 +43,16 @@ function parseSheet(worksheet) {
         : false,
       savePath:    cols.savePath    >= 0 ? String(row[cols.savePath]    || '').trim() : '',
     }))
-    .filter(r => r.fileName);          // require at least a file name
+    .filter(r => r.fileName);
 }
 
-export const UploadFileListModal = ({ onAdd, onCancel }) => {
-  const [dragOver, setDragOver]   = useState(false);
-  const [preview, setPreview]     = useState(null);   // parsed rows
-  const [fileName, setFileName]   = useState('');
-  const [error, setError]         = useState('');
+// ✅ departmentFilter prop add kiya
+export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
+  const [dragOver, setDragOver] = useState(false);
+  const [allRows, setAllRows] = useState(null);       // saare parsed rows
+  const [preview, setPreview] = useState(null);       // sirf filtered rows
+  const [fileName, setFileName] = useState('');
+  const [error, setError] = useState('');
   const inputRef = useRef(null);
 
   const processFile = (file) => {
@@ -70,11 +68,30 @@ export const UploadFileListModal = ({ onAdd, onCancel }) => {
         const wb = XLSX.read(e.target.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = parseSheet(ws);
+
         if (rows.length === 0) {
-          setError('No valid rows found. Make sure the file has a header row with columns: Department, File name, File path, User/Owner.');
+          setError('No valid rows found. Make sure the file has a header row.');
           return;
         }
-        setPreview(rows);
+
+        // ✅ Sirf current BU ki rows filter karo
+        const filtered = departmentFilter
+          ? rows.filter(r =>
+              r.department.trim().toLowerCase() === departmentFilter.trim().toLowerCase()
+            )
+          : rows;
+
+        if (filtered.length === 0) {
+          const foundDepts = [...new Set(rows.map(r => r.department).filter(Boolean))];
+          setError(
+            `No rows found for "${departmentFilter}". ` +
+            `File contains: ${foundDepts.join(', ')}`
+          );
+          return;
+        }
+
+        setAllRows(rows);
+        setPreview(filtered);
         setFileName(file.name);
       } catch {
         setError('Could not parse the file. Please check the format.');
@@ -95,26 +112,58 @@ export const UploadFileListModal = ({ onAdd, onCancel }) => {
     if (f) processFile(f);
   };
 
+  // ✅ Sirf filtered rows + departmentFilter bhejo
   const handleConfirm = () => {
-    if (preview && preview.length > 0) onAdd(preview);
+    if (preview && preview.length > 0) onAdd(preview, departmentFilter);
+  };
+
+  const handleReset = () => {
+    setPreview(null);
+    setAllRows(null);
+    setFileName('');
+    setError('');
   };
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="ufl-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onCancel}>✕</button>
+
         <h2 className="modal-title">
           {preview ? `Preview — ${fileName}` : 'Upload File List'}
         </h2>
+
         <p className="modal-subtitle">
-          {preview
-            ? `${preview.length} row${preview.length !== 1 ? 's' : ''} found. New rows will be added to the top of the list.`
-            : 'Upload an Excel or CSV file containing the list of files to convert. Expected columns: Department, File name, File path, User/Owner, Ready for UAT, Where to save?'}
+          {preview ? (
+            <>
+              <strong>{preview.length}</strong> row{preview.length !== 1 ? 's' : ''} found
+              {departmentFilter && (
+                <span style={{ color: '#6366f1', marginLeft: 6 }}>
+                  for <strong>{departmentFilter}</strong>
+                </span>
+              )}
+              {allRows && allRows.length > preview.length && (
+                <span style={{ color: '#94a3b8', marginLeft: 6 }}>
+                  ({allRows.length - preview.length} rows from other departments ignored)
+                </span>
+              )}
+            </>
+          ) : (
+            'Upload an Excel or CSV file. Only rows matching the current department will be imported.'
+          )}
         </p>
 
-        {/* Drop zone (only visible before parse) */}
         {!preview && (
           <>
+            {/* ✅ Active department hint */}
+            {departmentFilter && (
+              <div className="ufl-col-hint" style={{ background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 12 }}>
+                <strong>Active department:</strong> Only{' '}
+                <span style={{ color: '#2563eb' }}>{departmentFilter}</span>{' '}
+                rows will be imported. Other departments will be ignored.
+              </div>
+            )}
+
             <div
               className={`ufl-drop-zone ${dragOver ? 'drag-over' : ''}`}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -147,7 +196,6 @@ export const UploadFileListModal = ({ onAdd, onCancel }) => {
           </>
         )}
 
-        {/* Preview table */}
         {preview && (
           <>
             <div className="ufl-preview-wrap">
@@ -178,8 +226,7 @@ export const UploadFileListModal = ({ onAdd, onCancel }) => {
                 </tbody>
               </table>
             </div>
-
-            <button className="ufl-re-upload" onClick={() => { setPreview(null); setFileName(''); setError(''); }}>
+            <button className="ufl-re-upload" onClick={handleReset}>
               ← Upload a different file
             </button>
           </>

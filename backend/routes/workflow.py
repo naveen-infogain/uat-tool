@@ -1,7 +1,7 @@
 """
 Workflow file routes — persist the UAT file list to the database.
 """
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
@@ -15,8 +15,6 @@ from services.notification import (
 
 router = APIRouter()
 
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _to_dict(wf: WorkflowFile) -> dict:
     extras = wf.extras or {}
@@ -41,8 +39,6 @@ def _to_dict(wf: WorkflowFile) -> dict:
     }
 
 
-# ── Pydantic schemas ──────────────────────────────────────────────────────────
-
 class WorkflowFileCreate(BaseModel):
     department: str
     fileName: str
@@ -62,23 +58,46 @@ class WorkflowFileUpdate(BaseModel):
     sasFile: Optional[str] = None
     pysparkSqlQuery: Optional[str] = None
     comparisonResult: Optional[Dict[str, Any]] = None
-    issueAttachment: Optional[Dict[str, Any]] = None  # { name, type, dataUrl }
+    issueAttachment: Optional[Dict[str, Any]] = None
 
-
-# ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("/workflow-files")
 def list_workflow_files(db: Session = Depends(get_db)):
-    """Return all workflow files ordered by creation time."""
     rows = db.query(WorkflowFile).order_by(WorkflowFile.created_at.asc()).all()
     return {"files": [_to_dict(r) for r in rows]}
 
 
 @router.post("/workflow-files", status_code=201)
-def add_workflow_files(rows: List[WorkflowFileCreate], db: Session = Depends(get_db)):
-    """Bulk-insert new workflow file rows (from file-list upload)."""
+def add_workflow_files(
+    rows: List[WorkflowFileCreate],
+    db: Session = Depends(get_db),
+    department_filter: Optional[str] = Query(default=None),  # ✅ new
+):
+    """
+    Bulk-insert workflow file rows.
+    - If department_filter is set: only insert rows matching that department
+    - Skip duplicates by file_name + file_path
+    """
     created = []
+    skipped_duplicate = []
+    skipped_department = []
+
     for row in rows:
+        # ✅ Department filter check
+        if department_filter and row.department.strip().lower() != department_filter.strip().lower():
+            skipped_department.append(row.fileName)
+            continue
+
+        # Duplicate check
+        existing = db.query(WorkflowFile).filter(
+            WorkflowFile.file_name == row.fileName,
+            WorkflowFile.file_path == row.filePath,
+        ).first()
+
+        if existing:
+            skipped_duplicate.append(row.fileName)
+            continue
+
         wf = WorkflowFile(
             department=row.department,
             file_name=row.fileName,
@@ -89,10 +108,18 @@ def add_workflow_files(rows: List[WorkflowFileCreate], db: Session = Depends(get
             status="not_started",
         )
         db.add(wf)
-        db.flush()   # get the auto-generated id
+        db.flush()
         created.append(_to_dict(wf))
+
     db.commit()
-    return {"files": created}
+
+    return {
+        "files": created,
+        "created_count": len(created),
+        "skipped_duplicates": skipped_duplicate,
+        "skipped_other_departments": skipped_department,
+        "skipped_department_count": len(skipped_department),
+    }
 
 
 @router.patch("/workflow-files/{file_id}")
@@ -102,7 +129,6 @@ def update_workflow_file(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """Patch a workflow file's status or upload references."""
     wf = db.query(WorkflowFile).filter(WorkflowFile.id == file_id).first()
     if not wf:
         raise HTTPException(status_code=404, detail="Workflow file not found")
@@ -120,7 +146,6 @@ def update_workflow_file(
     if updates.comparisonId is not None:
         wf.comparison_id = updates.comparisonId
 
-    # extras (non-column data)
     extras = dict(wf.extras or {})
     if updates.pysparkFile is not None:
         extras["pysparkFile"] = updates.pysparkFile
@@ -137,7 +162,6 @@ def update_workflow_file(
     db.commit()
     db.refresh(wf)
 
-    # Fire notifications in the background when status transitions to a key state
     new_status = wf.status
     if updates.status is not None and new_status != previous_status:
         file_name = wf.file_name
@@ -156,7 +180,6 @@ def update_workflow_file(
 
 @router.delete("/workflow-files/{file_id}", status_code=204)
 def delete_workflow_file(file_id: int, db: Session = Depends(get_db)):
-    """Delete a workflow file record."""
     wf = db.query(WorkflowFile).filter(WorkflowFile.id == file_id).first()
     if not wf:
         raise HTTPException(status_code=404, detail="Workflow file not found")

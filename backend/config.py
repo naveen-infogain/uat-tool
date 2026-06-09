@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 class Settings:
     upload_folder: str = os.getenv("UPLOAD_FOLDER", "/tmp/uat_uploads")

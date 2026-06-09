@@ -7,7 +7,6 @@ import { IssueViewModal } from './IssueViewModal';
 import { DeviationModal } from './DeviationModal';
 import './MergedFileWorkflowTable.css';
 
-// ── Step flow visual indicators ─────────────────────────────────────────────
 const StepIcon = ({ state }) => {
   if (state === 'done') {
     return (
@@ -23,7 +22,6 @@ const StepIcon = ({ state }) => {
   return <span className="step-icon pending" />;
 };
 
-// Maps status → which step is done/active/pending
 const getStepStates = (status) => {
   switch (status) {
     case 'not_started':      return { py: 'active',  sas: 'pending', val: 'pending' };
@@ -65,7 +63,6 @@ const StatusStepFlow = ({ status }) => {
   );
 };
 
-// ── Action buttons by role + status ─────────────────────────────────────────
 const ActionCell = ({ file, role, onAction }) => {
   const { status } = file;
 
@@ -102,7 +99,6 @@ const ActionCell = ({ file, role, onAction }) => {
     }
   }
 
-  // Business user
   switch (status) {
     case 'not_started':
     case 'pyspark_uploaded':
@@ -147,37 +143,42 @@ const ActionCell = ({ file, role, onAction }) => {
   }
 };
 
-// ── Main component ───────────────────────────────────────────────────────────
-export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChange, onUpdateFile, onDeleteFile, onMoveToProduction, onAddFiles }) => {
-  const [uploadModal, setUploadModal]       = useState(null); // { file, type }
-  const [showAddFiles, setShowAddFiles]     = useState(false);
-  const [sasQueriesFile, setSasQueriesFile] = useState(null);
-  const [issueFile, setIssueFile]           = useState(null);
-  const [deviationFile, setDeviationFile]   = useState(null);
-  const [issueViewFile, setIssueViewFile]     = useState(null); // view-only issue display
-  const [approveConfirmFile, setApproveConfirmFile] = useState(null); // direct approve confirm
-  const [menuOpenId, setMenuOpenId]           = useState(null);
-  const [comparing, setComparing]           = useState(false); // loading state for comparison
-  const [comparisonMode, setComparisonMode] = useState('loose'); // 'exact' | 'loose' | 'structural'
+// ✅ currentDepartment prop add kiya
+export const MergedFileWorkflowTable = ({ 
+  files, role, selectedIds, onSelectChange, 
+  onUpdateFile, onDeleteFile, onMoveToProduction, 
+  onAddFiles,
+  currentDepartment  // ✅ NEW
+}) => {
+  const [uploadModal, setUploadModal]             = useState(null);
+  const [showAddFiles, setShowAddFiles]           = useState(false);
+  const [sasQueriesFile, setSasQueriesFile]       = useState(null);
+  const [issueFile, setIssueFile]                 = useState(null);
+  const [deviationFile, setDeviationFile]         = useState(null);
+  const [issueViewFile, setIssueViewFile]         = useState(null);
+  const [approveConfirmFile, setApproveConfirmFile] = useState(null);
+  const [menuOpenId, setMenuOpenId]               = useState(null);
+  const [comparing, setComparing]                 = useState(false);
+  const [comparisonMode, setComparisonMode]       = useState('loose');
 
   const handleAction = (file, type) => {
     setMenuOpenId(null);
     switch (type) {
-      case 'mark_na':                  return onUpdateFile(file.id, { status: 'not_applicable' });
-      case 'restore':                  return onUpdateFile(file.id, { status: 'not_started' });
-      case 'descope':                  return onUpdateFile(file.id, { status: 'uat_done' });
-      case 'mark_uat_ready':           return onUpdateFile(file.id, { status: 'uat_ready' });
-      case 'start_uat':                return onUpdateFile(file.id, { status: 'uat_in_progress' });
-      case 'compare':                  return handleCompare(file);
-      case 'upload_pyspark':           return setUploadModal({ file, type: 'pyspark' });
-      case 'upload_sas':               return setUploadModal({ file, type: 'sas' });
-      case 'view_sas_queries':         return handleViewSql(file);
-      case 'view_sql':                 return handleViewSql(file);
-      case 'delete':                   return onDeleteFile(file.id);
+      case 'mark_na':                   return onUpdateFile(file.id, { status: 'not_applicable' });
+      case 'restore':                   return onUpdateFile(file.id, { status: 'not_started' });
+      case 'descope':                   return onUpdateFile(file.id, { status: 'uat_done' });
+      case 'mark_uat_ready':            return onUpdateFile(file.id, { status: 'uat_ready' });
+      case 'start_uat':                 return onUpdateFile(file.id, { status: 'uat_in_progress' });
+      case 'compare':                   return handleCompare(file);
+      case 'upload_pyspark':            return setUploadModal({ file, type: 'pyspark' });
+      case 'upload_sas':                return setUploadModal({ file, type: 'sas' });
+      case 'view_sas_queries':          return handleViewSql(file);
+      case 'view_sql':                  return handleViewSql(file);
+      case 'delete':                    return onDeleteFile(file.id);
       case 'move_to_production_single': return onMoveToProduction([file.id]);
-      case 'view_deviations':   return setDeviationFile(file);
-      case 'view_issue':        return setIssueViewFile(file);
-      case 'approve_direct':    return setApproveConfirmFile(file);
+      case 'view_deviations':           return setDeviationFile(file);
+      case 'view_issue':                return setIssueViewFile(file);
+      case 'approve_direct':            return setApproveConfirmFile(file);
       default: break;
     }
   };
@@ -187,7 +188,6 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
       alert('Missing upload IDs. Please upload both files first.');
       return;
     }
-
     setComparing(true);
     try {
       const response = await fetch('http://localhost:8000/api/compare', {
@@ -199,19 +199,21 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
           mode: comparisonMode,
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || 'Comparison failed');
       }
-
       const result = await response.json();
       onUpdateFile(file.id, {
         status: 'compared',
         comparisonId: result.comparison_id,
         comparisonResult: result.comparison_result,
       });
-      setDeviationFile({ ...file, comparisonId: result.comparison_id, comparisonResult: result.comparison_result });
+      setDeviationFile({ 
+        ...file, 
+        comparisonId: result.comparison_id, 
+        comparisonResult: result.comparison_result 
+      });
     } catch (err) {
       alert(`Comparison error: ${err.message}`);
       console.error('Compare error:', err);
@@ -221,12 +223,10 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
   };
 
   const handleViewSql = async (file) => {
-    // Already have SQL in local state — show immediately
     if (file.pysparkSqlQuery) {
       setSasQueriesFile(file);
       return;
     }
-    // Fetch from DB using the upload record
     if (file.pysparkUploadId) {
       try {
         const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -242,7 +242,6 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
         console.error('Failed to fetch SQL from DB:', e);
       }
     }
-    // Show modal anyway — will display "No SQL query" message
     setSasQueriesFile(file);
   };
 
@@ -270,12 +269,6 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
     setDeviationFile(null);
   };
 
-  const handleReportIssue = () => {
-    setDeviationFile(null);
-    setIssueFile(deviationFile || issueFile); // keep reference
-  };
-
-  // Called after DeviationModal "Report Issue" → opens issue modal immediately
   const handleDeviationReportIssue = (resolvedDeviationFile) => {
     setDeviationFile(null);
     setIssueFile(resolvedDeviationFile);
@@ -299,7 +292,6 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
 
   return (
     <div className="merged-file-workflow-wrap">
-      {/* Table toolbar */}
       <div className="table-toolbar">
         <span className="table-count">{files.length} file{files.length !== 1 ? 's' : ''}</span>
         {role === 'developer' && (
@@ -312,7 +304,6 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
         )}
       </div>
 
-      {/* Main table */}
       <div className="table-scroll-wrap">
         <table className="merged-table">
           <thead>
@@ -332,7 +323,7 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
             {files.length === 0 && (
               <tr>
                 <td colSpan={role === 'developer' ? 9 : 8} className="empty-row">
-                  No files found. {role === 'developer' ? 'Use "Upload File List" to load the pre-requisite file list.' : 'No files are currently available for UAT.'}
+                  No files found. {role === 'developer' ? 'Use "Upload File List" to add files.' : 'No files available for UAT.'}
                 </td>
               </tr>
             )}
@@ -395,11 +386,15 @@ export const MergedFileWorkflowTable = ({ files, role, selectedIds, onSelectChan
         </table>
       </div>
 
-      {/* Modals */}
+      {/* ✅ departmentFilter pass kiya */}
       {showAddFiles && (
         <UploadFileListModal
-          onAdd={(rows) => { onAddFiles(rows); setShowAddFiles(false); }}
+          onAdd={(rows, deptFilter) => { 
+            onAddFiles(rows, deptFilter); 
+            setShowAddFiles(false); 
+          }}
           onCancel={() => setShowAddFiles(false)}
+          departmentFilter={currentDepartment}  // ✅ KEY CHANGE
         />
       )}
 

@@ -13,12 +13,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
-  // null = landing page; string = BU detail view
   const [selectedBU, setSelectedBU] = useState(null);
 
   const visibleFiles = files.filter(f => ALLOWED_BUSINESS_UNIT_SET.has(f.department || ''));
 
-  // ── Load all workflow files from DB on mount ──────────────────────────────
   useEffect(() => {
     fetch(`${API}/workflow-files`)
       .then(r => r.json())
@@ -27,9 +25,7 @@ function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Sync a status/field update to DB, then update local state ────────────
   const handleUpdateFile = useCallback(async (id, updates) => {
-    // Optimistically update UI immediately
     setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
     try {
       await fetch(`${API}/workflow-files/${id}`, {
@@ -42,8 +38,8 @@ function App() {
     }
   }, []);
 
-  // ── Add new rows (from file-list upload) ─────────────────────────────────
-  const handleAddFiles = useCallback(async (newRows) => {
+  // ✅ selectedBU department filter ke saath API call
+  const handleAddFiles = useCallback(async (newRows, departmentFilter) => {
     const payload = newRows.map(r => ({
       department: r.department || '',
       fileName: r.fileName || r.file_name || '',
@@ -52,26 +48,38 @@ function App() {
       readyForUAT: !!(r.readyForUAT ?? r.ready_for_uat),
       savePath: r.savePath || r.save_path || '',
     }));
+
     try {
-      const resp = await fetch(`${API}/workflow-files`, {
+      // ✅ department_filter query param backend ko bhejo
+      const url = departmentFilter
+        ? `${API}/workflow-files?department_filter=${encodeURIComponent(departmentFilter)}`
+        : `${API}/workflow-files`;
+
+      const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await resp.json();
+
       const saved = (data.files || []).map(f => ({
         ...f,
         pysparkFile: null,
         sasFile: null,
         issueComment: null,
       }));
+
       setFiles(prev => [...saved, ...prev]);
+
+      // ✅ User ko batao kitne skip hue
+      if (data.skipped_department_count > 0) {
+        console.info(`${data.skipped_department_count} rows from other departments were ignored.`);
+      }
     } catch (err) {
       console.error('Failed to save new files:', err);
     }
   }, []);
 
-  // ── Move to production = set status, keep in table ──────────────────────
   const handleMoveToProduction = useCallback(async (ids) => {
     const toMove = ids || selectedIds;
     setFiles(prev => prev.map(f => toMove.includes(f.id) ? { ...f, status: 'production' } : f));
@@ -87,7 +95,6 @@ function App() {
     );
   }, [selectedIds]);
 
-  // ── Hard delete ───────────────────────────────────────────────────────────
   const handleDeleteFile = useCallback(async (id) => {
     setFiles(prev => prev.filter(f => f.id !== id));
     setSelectedIds(prev => prev.filter(x => x !== id));
@@ -95,7 +102,6 @@ function App() {
   }, []);
 
   const filteredFiles = visibleFiles.filter(f => {
-    // When in BU view, scope to the selected BU first
     if (selectedBU && f.department !== selectedBU) return false;
     const q = searchQuery.toLowerCase();
     return (
@@ -119,7 +125,6 @@ function App() {
     );
   }
 
-  // ── Landing page (no BU selected) ────────────────────────────────────────
   if (!selectedBU) {
     return (
       <div className="app">
@@ -134,13 +139,15 @@ function App() {
           onBackToLanding={null}
         />
         <main className="app-main">
-          <LandingPage files={visibleFiles} onSelectBU={bu => { setSelectedBU(bu); setSearchQuery(''); setSelectedIds([]); }} />
+          <LandingPage
+            files={visibleFiles}
+            onSelectBU={bu => { setSelectedBU(bu); setSearchQuery(''); setSelectedIds([]); }}
+          />
         </main>
       </div>
     );
   }
 
-  // ── BU detail view ────────────────────────────────────────────────────────
   return (
     <div className="app">
       <Header
@@ -163,6 +170,7 @@ function App() {
           onDeleteFile={handleDeleteFile}
           onMoveToProduction={handleMoveToProduction}
           onAddFiles={handleAddFiles}
+          currentDepartment={selectedBU}  
         />
       </main>
     </div>
