@@ -111,7 +111,7 @@ const ActionCell = ({ file, role, onAction }) => {
   if (role === 'developer') {
     switch (status) {
       case 'not_started':
-        return <button className="act-btn primary" onClick={() => onAction(file, 'upload_pyspark')}>Upload PySpark Output</button>;
+        return <button className="act-btn primary" onClick={() => onAction(file, 'upload_pyspark')}>Upload GCP output</button>;
       case 'pyspark_uploaded':
         return <button className="act-btn primary" onClick={() => onAction(file, 'mark_uat_ready')}>Mark UAT Ready</button>;
       case 'uat_ready':

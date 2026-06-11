@@ -17,8 +17,8 @@ export const Header = ({
   canMoveToProduction,
   selectedBU,
   onBackToLanding,
-  filterField = 'department',   // ✅ NEW — which column the search applies to
-  onFilterFieldChange,          // ✅ NEW
+  filterField = 'department',   
+  onFilterFieldChange,         
 }) => {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const activeFilter = FILTER_OPTIONS.find(o => o.value === filterField) || FILTER_OPTIONS[0];
@@ -33,7 +33,7 @@ export const Header = ({
               onClick={onBackToLanding || undefined}
               title={onBackToLanding ? 'Back to home' : undefined}
             >
-              SparkSAS Compare
+              GCP-SAS Compare
             </h1>
             {selectedBU && (
               <span className="header-bu-crumb">

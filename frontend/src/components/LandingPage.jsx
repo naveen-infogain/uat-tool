@@ -36,11 +36,11 @@ function deriveBUStats(files) {
 
     const s = map[bu];
     s.total += 1;
-    if (f.status === 'uat_done')         s.done       += 1;
-    else if (f.status === 'issue_reported') s.issues   += 1;
-    else if (f.status === 'production')  s.production  += 1;
-    else if (f.status === 'not_started') s.notStarted  += 1;
-    else                                  s.inProgress  += 1;
+    if (f.status === 'uat_done')            s.done       += 1;
+    else if (f.status === 'issue_reported') s.issues     += 1;
+    else if (f.status === 'production')     s.production += 1;
+    else if (f.status === 'not_started')    s.notStarted += 1;
+    else                                    s.inProgress += 1;
   }
 
   return ALLOWED_BUSINESS_UNITS.map(name => map[name]);
@@ -148,7 +148,7 @@ export function LandingPage({ files, onSelectBU }) {
   return (
     <div className="landing">
       <div className="landing-hero">
-        <h1 className="landing-title">SparkSAS Compare</h1>
+        <h1 className="landing-title"> GCP-SAS Compare</h1>
         <p className="landing-subtitle">UAT Data Comparison Dashboard — select a Business Unit to begin</p>
       </div>
 

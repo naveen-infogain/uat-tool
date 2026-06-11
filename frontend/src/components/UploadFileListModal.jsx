@@ -57,8 +57,8 @@ function buMatchValue(row) {
 // ✅ departmentFilter prop = selected BU
 export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
   const [dragOver, setDragOver] = useState(false);
-  const [allRows, setAllRows] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [allRows, setAllRows] = useState(null);       // saare parsed rows
+  const [preview, setPreview] = useState(null);       // sirf filtered rows
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef(null);
@@ -89,7 +89,6 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
 
         if (filtered.length === 0) {
           const foundBUs = [...new Set(rows.map(r => r.buName).filter(Boolean))];
-          // ✅ FIX: restored backtick template literals
           setError(
             `No rows found for "${departmentFilter}". ` +
             `File contains: ${foundBUs.join(', ')}`
@@ -99,10 +98,10 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
 
         setAllRows(rows);
         setFileName(file.name);
+        // Show preview immediately with 'checking' state while we query the backend
         setPreview(filtered.map(r => ({ ...r, rowStatus: 'checking' })));
 
         try {
-          // ✅ FIX: restored backtick template literal in fetch URL
           const resp = await fetch(`${API}/workflow-files/check`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -162,7 +161,6 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
       <div className="ufl-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onCancel}>✕</button>
 
-        {/* ✅ FIX: restored backtick template literal */}
         <h2 className="modal-title">
           {preview ? `Preview — ${fileName}` : 'Upload File List'}
         </h2>
@@ -199,6 +197,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
 
         {!preview && (
           <>
+            {/* ✅ Active BU hint */}
             {departmentFilter && (
               <div className="ufl-col-hint" style={{ background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 12 }}>
                 <strong>Active business unit:</strong> Only{' '}
@@ -252,6 +251,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
                     <th>FILE NAME</th>
                     <th>FILE PATH</th>
                     <th>OWNER</th>
+                   
                   </tr>
                 </thead>
                 <tbody>
@@ -274,6 +274,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
                       <td className="fn-cell">{row.fileName}</td>
                       <td className="path-cell">{row.filePath || '—'}</td>
                       <td>{row.owner || '—'}</td>
+                      
                     </tr>
                   ))}
                 </tbody>
@@ -293,7 +294,6 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
               onClick={handleConfirm}
               disabled={isChecking || newCount === 0}
             >
-              {/* ✅ FIX: restored backtick template literals in button labels */}
               {isChecking
                 ? 'Checking…'
                 : newCount === 0
