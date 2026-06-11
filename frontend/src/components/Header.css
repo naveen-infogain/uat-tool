@@ -163,10 +163,60 @@
   font-weight: 500;
   color: #374151;
   cursor: pointer;
+  /* keeps the button from resizing as the selected label changes */
+  min-width: 160px;
+  justify-content: flex-start;
 }
 
 .filter-btn:hover {
   background: #f8fafc;
+}
+
+/* ── Filter dropdown (Department / File Name / Owner / State) ── */
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.filter-dropdown-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  min-width: 190px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 60;
+}
+
+.filter-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.filter-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.filter-dropdown-item.active {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
 }
 
 .search-wrapper {

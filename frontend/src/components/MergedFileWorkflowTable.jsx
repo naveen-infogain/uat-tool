@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { UploadModal } from './UploadModal';
 import { UploadFileListModal } from './UploadFileListModal';
 import { SASQueriesModal } from './SASQueriesModal';
@@ -6,6 +6,39 @@ import { IssueModal } from './IssueModal';
 import { IssueViewModal } from './IssueViewModal';
 import { DeviationModal } from './DeviationModal';
 import './MergedFileWorkflowTable.css';
+
+const STATUS_LABELS = {
+  not_started:      'New',
+  pyspark_uploaded: 'New',
+  uat_ready:        'UAT Ready',
+  uat_in_progress:  'In Progress',   // ✅ business user view -> "UAT Ready" (override below)
+  sas_uploaded:     'UAT Started',
+  compared:         'UAT Started',
+  uat_done:         'UAT Done',
+  issue_reported:   'Issue Reported',
+  production:       'In Production',
+  descoped:         'Descoped',
+};
+
+// label -> css color key
+const STATE_KEYS = {
+  'New':            'new',
+  'UAT Ready':      'uat_ready',
+  'In Progress':    'in_progress',
+  'UAT Started':    'uat_started',
+  'UAT Done':       'uat_done',
+  'Issue Reported': 'issue_reported',
+  'In Production':  'production',
+  'Descoped':       'descoped',
+};
+
+// ✅ Displayed state label (role-aware)
+const getStateLabel = (status, role) => {
+  if (role === 'business_user' && status === 'uat_in_progress') return 'UAT Ready';
+  return STATUS_LABELS[status] || 'New';
+};
+
+const getStateKey = (status, role) => STATE_KEYS[getStateLabel(status, role)] || 'new';
 
 const StepIcon = ({ state }) => {
   if (state === 'done') {
@@ -58,7 +91,6 @@ const StatusStepFlow = ({ status }) => {
         <StepIcon state={s.val} />
         <span className="step-label">Validated</span>
       </div>
-      {s.tag && <span className={`step-tag step-tag-${status}`}>{s.tag}</span>}
     </div>
   );
 };
@@ -121,7 +153,7 @@ const ActionCell = ({ file, role, onAction }) => {
       return (
         <div className="act-group">
           <button className="act-btn primary" onClick={() => onAction(file, 'compare')}>Run Validation</button>
-          <button className="act-btn approve" onClick={() => onAction(file, 'approve_direct')}>Approve</button>
+          <button className="act-btn approve" disabled title="Run validation first to enable approval">Approve</button>
         </div>
       );
 
@@ -142,12 +174,14 @@ const ActionCell = ({ file, role, onAction }) => {
   }
 };
 
-// ✅ currentDepartment prop add kiya
+
 export const MergedFileWorkflowTable = ({
   files, role, selectedIds, onSelectChange,
   onUpdateFile, onDeleteFile, onMoveToProduction,
   onAddFiles,
-  currentDepartment  // ✅ NEW
+  currentDepartment,            // ✅ NEW
+  searchQuery = '',             // ✅ NEW — Header se
+  filterField = 'department',   // ✅ NEW — Header se
 }) => {
   const [uploadModal, setUploadModal]             = useState(null);
   const [showAddFiles, setShowAddFiles]           = useState(false);
@@ -159,6 +193,33 @@ export const MergedFileWorkflowTable = ({
   const [menuOpenId, setMenuOpenId]               = useState(null);
   const [comparing, setComparing]                 = useState(false);
   const [comparisonMode, setComparisonMode]       = useState('loose');
+
+  // ✅ Filtering ab Header ke searchQuery + filterField par based hai
+  const filteredFiles = useMemo(() => {
+    const q = (searchQuery || '').trim().toLowerCase();
+    if (!q) return files;
+    return files.filter(file => {
+      switch (filterField) {
+        case 'department':
+          return (
+            (file.buName || '').toLowerCase().includes(q) ||
+            (file.department || '').toLowerCase().includes(q)
+          );
+        case 'fileName':
+          return (file.fileName || '').toLowerCase().includes(q);
+        case 'owner':
+          return (file.owner || '').toLowerCase().includes(q);
+        case 'status':
+          // displayed state label ("New", "UAT Ready"...) aur raw status dono match
+          return (
+            getStateLabel(file.status, role).toLowerCase().includes(q) ||
+            (file.status || '').toLowerCase().includes(q)
+          );
+        default:
+          return true;
+      }
+    });
+  }, [files, filterField, searchQuery, role]);
 
   const handleAction = (file, type) => {
     setMenuOpenId(null);
@@ -289,10 +350,16 @@ export const MergedFileWorkflowTable = ({
     );
   };
 
+  const isSearching = (searchQuery || '').trim().length > 0;
+
   return (
     <div className="merged-file-workflow-wrap">
       <div className="table-toolbar">
-        <span className="table-count">{files.length} file{files.length !== 1 ? 's' : ''}</span>
+        <span className="table-count">
+          {isSearching
+            ? `${filteredFiles.length} of ${files.length} file${files.length !== 1 ? 's' : ''}`
+            : `${files.length} file${files.length !== 1 ? 's' : ''}`}
+        </span>
         {role === 'developer' && (
           <button className="add-files-btn" onClick={() => setShowAddFiles(true)}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -307,26 +374,28 @@ export const MergedFileWorkflowTable = ({
         <table className="merged-table">
           <thead>
             <tr>
+              <th>BU NAMES</th>
               <th>DEPARTMENT</th>
               <th>FILE NAME</th>
               <th>FILE PATH</th>
               <th>OWNER</th>
-              <th>UAT READY</th>
-              <th>SAVE PATH</th>
               <th>STATUS</th>
+              <th>STATE</th>
               <th>ACTION</th>
               {role === 'developer' && <th className="th-select">SELECT</th>}
             </tr>
           </thead>
           <tbody>
-            {files.length === 0 && (
+            {filteredFiles.length === 0 && (
               <tr>
                 <td colSpan={role === 'developer' ? 9 : 8} className="empty-row">
-                  No files found. {role === 'developer' ? 'Use "Upload File List" to add files.' : 'No files available for UAT.'}
+                  {files.length === 0
+                    ? `No files found. ${role === 'developer' ? 'Use "Upload File List" to add files.' : 'No files available for UAT.'}`
+                    : 'No files match your search.'}
                 </td>
               </tr>
             )}
-            {files.map(file => (
+            {filteredFiles.map(file => (
               <tr
                 key={file.id}
                 className={`merged-row ${
@@ -335,17 +404,19 @@ export const MergedFileWorkflowTable = ({
                   file.status === 'uat_done' || file.status === 'production' ? 'row-done' : ''
                 }`}
               >
+                <td className="bu-cell" title={file.businessUnit || file.buName || currentDepartment || ''}>
+                  {file.businessUnit || file.buName || currentDepartment || '—'}
+                </td>
                 <td className="dept-cell">{file.department || '—'}</td>
                 <td className="filename-cell" title={file.fileName}>{file.fileName}</td>
                 <td className="filepath-cell" title={file.filePath}>{file.filePath || '—'}</td>
-                <td className="owner-cell">{file.owner || '—'}</td>
-                <td className="uat-ready-cell">
-                  {file.readyForUAT
-                    ? <span className="badge-uat-yes">Yes</span>
-                    : <span className="badge-uat-no">—</span>}
-                </td>
-                <td className="savepath-cell" title={file.savePath}>{file.savePath || '—'}</td>
+                <td className="owner-cell" title={file.owner}>{file.owner || '—'}</td>
                 <td className="status-td"><StatusStepFlow status={file.status} /></td>
+                <td className="state-cell">
+                  <span className={`state-badge state-${getStateKey(file.status, role)}`}>
+                    {getStateLabel(file.status, role)}
+                  </span>
+                </td>
                 <td className="action-td">
                   <ActionCell file={file} role={role} onAction={handleAction} />
                 </td>

@@ -260,3 +260,41 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* Row status badges */
+.row-status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.row-status-new {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.row-status-duplicate {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.row-status-checking {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+}
+
+/* Row highlighting for duplicates */
+.ufl-preview-table tr.row-duplicate td {
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.ufl-preview-table tr.row-checking td {
+  opacity: 0.6;
+}

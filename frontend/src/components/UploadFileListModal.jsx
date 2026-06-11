@@ -2,7 +2,10 @@ import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import './UploadFileListModal.css';
 
+const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
 const COLUMN_MAP = {
+  buName:       ['bu names', 'bu name', 'bu', 'business unit', 'businessunit', 'business_unit'],
   department:   ['department', 'dept'],
   fileName:     ['file name', 'filename', 'file'],
   filePath:     ['file path', 'filepath', 'path'],
@@ -34,6 +37,7 @@ function parseSheet(worksheet) {
   return raw.slice(1)
     .filter(row => row.some(cell => cell !== ''))
     .map(row => ({
+      buName:      cols.buName      >= 0 ? String(row[cols.buName]      || '').trim() : '',
       department:  cols.department  >= 0 ? String(row[cols.department]  || '').trim() : '',
       fileName:    cols.fileName    >= 0 ? String(row[cols.fileName]    || '').trim() : '',
       filePath:    cols.filePath    >= 0 ? String(row[cols.filePath]    || '').trim() : '',
@@ -46,11 +50,15 @@ function parseSheet(worksheet) {
     .filter(r => r.fileName);
 }
 
-// ✅ departmentFilter prop add kiya
+function buMatchValue(row) {
+  return (row.buName || '').trim().toLowerCase();
+}
+
+// ✅ departmentFilter prop = selected BU
 export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
   const [dragOver, setDragOver] = useState(false);
-  const [allRows, setAllRows] = useState(null);       // saare parsed rows
-  const [preview, setPreview] = useState(null);       // sirf filtered rows
+  const [allRows, setAllRows] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef(null);
@@ -63,7 +71,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const wb = XLSX.read(e.target.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -74,25 +82,47 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
           return;
         }
 
-        // ✅ Sirf current BU ki rows filter karo
+        const target = (departmentFilter || '').trim().toLowerCase();
         const filtered = departmentFilter
-          ? rows.filter(r =>
-              r.department.trim().toLowerCase() === departmentFilter.trim().toLowerCase()
-            )
+          ? rows.filter(r => buMatchValue(r) === target)
           : rows;
 
         if (filtered.length === 0) {
-          const foundDepts = [...new Set(rows.map(r => r.department).filter(Boolean))];
+          const foundBUs = [...new Set(rows.map(r => r.buName).filter(Boolean))];
+          // ✅ FIX: restored backtick template literals
           setError(
             `No rows found for "${departmentFilter}". ` +
-            `File contains: ${foundDepts.join(', ')}`
+            `File contains: ${foundBUs.join(', ')}`
           );
           return;
         }
 
         setAllRows(rows);
-        setPreview(filtered);
         setFileName(file.name);
+        setPreview(filtered.map(r => ({ ...r, rowStatus: 'checking' })));
+
+        try {
+          // ✅ FIX: restored backtick template literal in fetch URL
+          const resp = await fetch(`${API}/workflow-files/check`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(filtered.map(r => ({
+              fileName: r.fileName,
+              filePath: r.filePath || '',
+            }))),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            setPreview(filtered.map((r, i) => ({
+              ...r,
+              rowStatus: data.rows[i]?.rowStatus || 'new',
+            })));
+          } else {
+            setPreview(filtered.map(r => ({ ...r, rowStatus: 'new' })));
+          }
+        } catch {
+          setPreview(filtered.map(r => ({ ...r, rowStatus: 'new' })));
+        }
       } catch {
         setError('Could not parse the file. Please check the format.');
       }
@@ -112,7 +142,10 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
     if (f) processFile(f);
   };
 
-  // ✅ Sirf filtered rows + departmentFilter bhejo
+  const isChecking = preview && preview.some(r => r.rowStatus === 'checking');
+  const newCount   = preview ? preview.filter(r => r.rowStatus !== 'duplicate').length : 0;
+  const dupCount   = preview ? preview.filter(r => r.rowStatus === 'duplicate').length : 0;
+
   const handleConfirm = () => {
     if (preview && preview.length > 0) onAdd(preview, departmentFilter);
   };
@@ -129,6 +162,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
       <div className="ufl-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onCancel}>✕</button>
 
+        {/* ✅ FIX: restored backtick template literal */}
         <h2 className="modal-title">
           {preview ? `Preview — ${fileName}` : 'Upload File List'}
         </h2>
@@ -142,25 +176,34 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
                   for <strong>{departmentFilter}</strong>
                 </span>
               )}
+              {!isChecking && newCount > 0 && (
+                <span style={{ color: '#16a34a', marginLeft: 8 }}>
+                  · <strong>{newCount} new</strong>
+                </span>
+              )}
+              {!isChecking && dupCount > 0 && (
+                <span style={{ color: '#d97706', marginLeft: 6 }}>
+                  · <strong>{dupCount} already present</strong>
+                </span>
+              )}
               {allRows && allRows.length > preview.length && (
                 <span style={{ color: '#94a3b8', marginLeft: 6 }}>
-                  ({allRows.length - preview.length} rows from other departments ignored)
+                  ({allRows.length - preview.length} rows from other business units ignored)
                 </span>
               )}
             </>
           ) : (
-            'Upload an Excel or CSV file. Only rows matching the current department will be imported.'
+            'Upload an Excel or CSV file. Only rows matching the current business unit will be imported.'
           )}
         </p>
 
         {!preview && (
           <>
-            {/* ✅ Active department hint */}
             {departmentFilter && (
               <div className="ufl-col-hint" style={{ background: '#eff6ff', borderColor: '#bfdbfe', marginBottom: 12 }}>
-                <strong>Active department:</strong> Only{' '}
+                <strong>Active business unit:</strong> Only{' '}
                 <span style={{ color: '#2563eb' }}>{departmentFilter}</span>{' '}
-                rows will be imported. Other departments will be ignored.
+                rows will be imported. Other business units will be ignored.
               </div>
             )}
 
@@ -191,7 +234,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
             {error && <div className="ufl-error">{error}</div>}
 
             <div className="ufl-col-hint">
-              <strong>Expected columns:</strong> Department · File name · File path · User/Owner · Ready for UAT · Where to save?
+              <strong>Expected columns:</strong> BU Names · Department · File name · File path · User/Owner ·
             </div>
           </>
         )}
@@ -203,24 +246,34 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
                 <thead>
                   <tr>
                     <th>#</th>
+                    <th>STATUS</th>
+                    <th>BU NAME</th>
                     <th>DEPARTMENT</th>
                     <th>FILE NAME</th>
                     <th>FILE PATH</th>
                     <th>OWNER</th>
-                    <th>UAT READY</th>
-                    <th>SAVE PATH</th>
                   </tr>
                 </thead>
                 <tbody>
                   {preview.map((row, i) => (
-                    <tr key={i}>
+                    <tr key={i} className={row.rowStatus === 'duplicate' ? 'row-duplicate' : row.rowStatus === 'checking' ? 'row-checking' : ''}>
                       <td className="row-num">{i + 1}</td>
+                      <td>
+                        {row.rowStatus === 'new' && (
+                          <span className="row-status-badge row-status-new">New</span>
+                        )}
+                        {row.rowStatus === 'duplicate' && (
+                          <span className="row-status-badge row-status-duplicate">Already Present</span>
+                        )}
+                        {row.rowStatus === 'checking' && (
+                          <span className="row-status-badge row-status-checking">Checking…</span>
+                        )}
+                      </td>
+                      <td>{row.buName || departmentFilter || '—'}</td>
                       <td>{row.department || '—'}</td>
                       <td className="fn-cell">{row.fileName}</td>
                       <td className="path-cell">{row.filePath || '—'}</td>
                       <td>{row.owner || '—'}</td>
-                      <td>{row.readyForUAT ? <span className="uat-yes">Yes</span> : '—'}</td>
-                      <td className="path-cell">{row.savePath || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -235,8 +288,20 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onCancel}>Cancel</button>
           {preview && (
-            <button className="btn-primary" onClick={handleConfirm}>
-              Add {preview.length} row{preview.length !== 1 ? 's' : ''} to List
+            <button
+              className="btn-primary"
+              onClick={handleConfirm}
+              disabled={isChecking || newCount === 0}
+            >
+              {/* ✅ FIX: restored backtick template literals in button labels */}
+              {isChecking
+                ? 'Checking…'
+                : newCount === 0
+                  ? `All ${dupCount} row${dupCount !== 1 ? 's' : ''} already present`
+                  : dupCount > 0
+                    ? `Add ${newCount} new row${newCount !== 1 ? 's' : ''} · ${dupCount} will be skipped`
+                    : `Add ${newCount} row${newCount !== 1 ? 's' : ''} to List`
+              }
             </button>
           )}
         </div>

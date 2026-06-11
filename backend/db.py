@@ -51,11 +51,14 @@ def _ensure_workflow_schema():
         return
 
     columns = {column["name"] for column in inspector.get_columns("workflow_files")}
-    if "extras" in columns:
-        return
+    json_type = "JSONB" if engine.dialect.name == "postgresql" else "JSON"
 
-    column_type = "JSONB" if engine.dialect.name == "postgresql" else "JSON"
     with engine.begin() as connection:
-        connection.execute(
-            text(f"ALTER TABLE workflow_files ADD COLUMN extras {column_type}")
-        )
+        if "extras" not in columns:
+            connection.execute(
+                text(f"ALTER TABLE workflow_files ADD COLUMN extras {json_type}")
+            )
+        if "bu_name" not in columns:
+            connection.execute(
+                text("ALTER TABLE workflow_files ADD COLUMN bu_name VARCHAR(100)")
+            )

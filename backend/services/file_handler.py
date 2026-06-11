@@ -7,7 +7,6 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
-import pandas.api.types as ptypes
 
 
 class FileHandler:
@@ -16,10 +15,14 @@ class FileHandler:
     ALLOWED_EXTENSIONS = {"xlsx", "xls", "csv", "parquet", "json", "sas7bdat"}
 
     @staticmethod
-    def build_subfolder(bu: str, workflow_file_path: str, upload_type: str) -> str:
+    def build_subfolder(bu: str, workflow_file_path: str, upload_type: str = "") -> str:
         """
-        Build a structured subfolder path: {BU}/{file_path_segments}/{upload_type}
-        Example: Express_Shipment/data/reports/pyspark
+        Build a structured subfolder path: {BU}/{file_path_segments}
+        Example: EU_Marketing/data/eu_marketing/campaign_review
+
+        Both PySpark and SAS outputs are saved into this same folder.
+        The upload_type argument is still accepted (so the existing upload
+        route keeps working) but is no longer added to the path.
         """
         parts = []
         if bu:
@@ -29,8 +32,6 @@ class FileHandler:
                 clean = FileHandler._sanitize_segment(seg)
                 if clean:
                     parts.append(clean)
-        if upload_type in ("pyspark", "sas"):
-            parts.append(upload_type)
         return os.path.join(*parts) if parts else ""
 
     @staticmethod
@@ -117,19 +118,6 @@ class FileHandler:
         return None
 
     @staticmethod
-    def _friendly_dtype(series) -> str:
-        """Map a pandas dtype to a simple, comparable label."""
-        if ptypes.is_bool_dtype(series):
-            return "boolean"
-        if ptypes.is_integer_dtype(series):
-            return "integer"
-        if ptypes.is_float_dtype(series):
-            return "float"
-        if ptypes.is_datetime64_any_dtype(series):
-            return "datetime"
-        return "string"
-
-    @staticmethod
     def parse_file(file_path: str, ext: str = None):
         """Parse file into structured data."""
         if ext is None:
@@ -149,9 +137,6 @@ class FileHandler:
             else:
                 raise ValueError(f"Unsupported file format: {ext}")
 
-            # Capture datatypes BEFORE fillna (fillna("") would coerce numeric -> object).
-            dtypes = {col: FileHandler._friendly_dtype(df[col]) for col in df.columns}
-
             df = df.fillna("")
             df = df.map(lambda x: str(x).strip() if isinstance(x, str) else x)
 
@@ -161,7 +146,6 @@ class FileHandler:
                 "row_count": len(df),
                 "column_count": len(df.columns),
                 "data": df.to_dict("records"),
-                "dtypes": dtypes,
             }
 
         except Exception as e:

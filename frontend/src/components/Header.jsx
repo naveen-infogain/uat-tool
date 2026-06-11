@@ -1,5 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Header.css';
+
+const FILTER_OPTIONS = [
+  { value: 'department', label: 'Department Name' },
+  { value: 'fileName',   label: 'File Name' },
+  { value: 'owner',      label: 'Owner' },
+  { value: 'status',     label: 'State' },
+];
 
 export const Header = ({
   role,
@@ -10,7 +17,12 @@ export const Header = ({
   canMoveToProduction,
   selectedBU,
   onBackToLanding,
+  filterField = 'department',   // ✅ NEW — which column the search applies to
+  onFilterFieldChange,          // ✅ NEW
 }) => {
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const activeFilter = FILTER_OPTIONS.find(o => o.value === filterField) || FILTER_OPTIONS[0];
+
   return (
     <div className="header-wrapper">
       <header className="header">
@@ -53,15 +65,42 @@ export const Header = ({
       {selectedBU && (
         <div className="header-toolbar">
           <div className="toolbar-left">
-            <button className="filter-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-              Filter
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 4 }}>
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
+            <div className="filter-dropdown">
+              <button
+                type="button"
+                className="filter-btn"
+                onClick={() => setFilterMenuOpen(o => !o)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                {activeFilter.label}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 4 }}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {filterMenuOpen && (
+                <>
+                  <div className="filter-backdrop" onClick={() => setFilterMenuOpen(false)} />
+                  <div className="filter-dropdown-menu">
+                    {FILTER_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`filter-dropdown-item ${opt.value === filterField ? 'active' : ''}`}
+                        onClick={() => {
+                          onFilterFieldChange?.(opt.value);
+                          setFilterMenuOpen(false);
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="toolbar-center">
@@ -73,7 +112,7 @@ export const Header = ({
               <input
                 type="text"
                 className="search-input"
-                placeholder="Search files, departments, or business units..."
+                placeholder={`Search by ${activeFilter.label.toLowerCase()}...`}
                 value={searchQuery}
                 onChange={e => onSearchChange(e.target.value)}
               />

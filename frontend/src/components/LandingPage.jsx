@@ -29,7 +29,7 @@ function deriveBUStats(files) {
   );
 
   for (const f of files) {
-    const bu = f.department || '';
+    const bu = f.buName || f.department || '';
     if (!ALLOWED_BUSINESS_UNIT_SET.has(bu)) {
       continue;
     }

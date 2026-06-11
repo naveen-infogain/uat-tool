@@ -42,6 +42,7 @@ class WorkflowFile(Base):
     __tablename__ = "workflow_files"
 
     id = Column(Integer, primary_key=True)
+    bu_name = Column(String(100), nullable=True, index=True)  # BU Name from excel
     department = Column(String(100), nullable=False)
     file_name = Column(String(255), nullable=False, index=True)
     file_path = Column(String(500))

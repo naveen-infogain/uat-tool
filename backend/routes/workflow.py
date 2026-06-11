@@ -20,6 +20,7 @@ def _to_dict(wf: WorkflowFile) -> dict:
     extras = wf.extras or {}
     return {
         "id": wf.id,
+        "buName": wf.bu_name or "",
         "department": wf.department,
         "fileName": wf.file_name,
         "filePath": wf.file_path or "",
@@ -40,12 +41,18 @@ def _to_dict(wf: WorkflowFile) -> dict:
 
 
 class WorkflowFileCreate(BaseModel):
-    department: str
+    buName: Optional[str] = ""
+    department: Optional[str] = ""
     fileName: str
     filePath: Optional[str] = ""
     owner: Optional[str] = ""
     readyForUAT: Optional[bool] = False
     savePath: Optional[str] = ""
+
+
+class WorkflowFileCheckItem(BaseModel):
+    fileName: str
+    filePath: Optional[str] = ""
 
 
 class WorkflowFileUpdate(BaseModel):
@@ -67,6 +74,26 @@ def list_workflow_files(db: Session = Depends(get_db)):
     return {"files": [_to_dict(r) for r in rows]}
 
 
+@router.post("/workflow-files/check")
+def check_workflow_files(
+    rows: List[WorkflowFileCheckItem],
+    db: Session = Depends(get_db),
+):
+    """Check which rows are new vs already in the database (by file_name + file_path)."""
+    result = []
+    for row in rows:
+        existing = db.query(WorkflowFile).filter(
+            WorkflowFile.file_name == row.fileName,
+            WorkflowFile.file_path == (row.filePath or ""),
+        ).first()
+        result.append({
+            "fileName": row.fileName,
+            "filePath": row.filePath or "",
+            "rowStatus": "duplicate" if existing else "new",
+        })
+    return {"rows": result}
+
+
 @router.post("/workflow-files", status_code=201)
 def add_workflow_files(
     rows: List[WorkflowFileCreate],
@@ -83,15 +110,16 @@ def add_workflow_files(
     skipped_department = []
 
     for row in rows:
-        # ✅ Department filter check
-        if department_filter and row.department.strip().lower() != department_filter.strip().lower():
+        # BU filter: only match against bu_name column
+        row_bu = (row.buName or '').strip().lower()
+        if department_filter and row_bu != department_filter.strip().lower():
             skipped_department.append(row.fileName)
             continue
 
         # Duplicate check
         existing = db.query(WorkflowFile).filter(
             WorkflowFile.file_name == row.fileName,
-            WorkflowFile.file_path == row.filePath,
+            WorkflowFile.file_path == (row.filePath or ""),
         ).first()
 
         if existing:
@@ -99,7 +127,8 @@ def add_workflow_files(
             continue
 
         wf = WorkflowFile(
-            department=row.department,
+            bu_name=row.buName or "",
+            department=row.department or "",
             file_name=row.fileName,
             file_path=row.filePath,
             owner=row.owner,
@@ -165,7 +194,7 @@ def update_workflow_file(
     new_status = wf.status
     if updates.status is not None and new_status != previous_status:
         file_name = wf.file_name
-        department = wf.department
+        department = wf.bu_name or wf.department
         if new_status == "uat_ready":
             background_tasks.add_task(notify_uat_ready, file_name, department)
         elif new_status == "issue_reported":

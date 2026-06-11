@@ -12,10 +12,11 @@ function App() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterField, setFilterField] = useState('department'); 
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedBU, setSelectedBU] = useState(null);
 
-  const visibleFiles = files.filter(f => ALLOWED_BUSINESS_UNIT_SET.has(f.department || ''));
+  const visibleFiles = files.filter(f => ALLOWED_BUSINESS_UNIT_SET.has(f.buName || f.department || ''));
 
   useEffect(() => {
     fetch(`${API}/workflow-files`)
@@ -38,9 +39,9 @@ function App() {
     }
   }, []);
 
-  // ✅ selectedBU department filter ke saath API call
   const handleAddFiles = useCallback(async (newRows, departmentFilter) => {
     const payload = newRows.map(r => ({
+      buName: r.buName || '',
       department: r.department || '',
       fileName: r.fileName || r.file_name || '',
       filePath: r.filePath || r.file_path || '',
@@ -50,7 +51,6 @@ function App() {
     }));
 
     try {
-      // ✅ department_filter query param backend ko bhejo
       const url = departmentFilter
         ? `${API}/workflow-files?department_filter=${encodeURIComponent(departmentFilter)}`
         : `${API}/workflow-files`;
@@ -71,7 +71,6 @@ function App() {
 
       setFiles(prev => [...saved, ...prev]);
 
-      // ✅ User ko batao kitne skip hue
       if (data.skipped_department_count > 0) {
         console.info(`${data.skipped_department_count} rows from other departments were ignored.`);
       }
@@ -101,16 +100,10 @@ function App() {
     await fetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error);
   }, []);
 
-  const filteredFiles = visibleFiles.filter(f => {
-    if (selectedBU && f.department !== selectedBU) return false;
-    const q = searchQuery.toLowerCase();
-    return (
-      (f.department || '').toLowerCase().includes(q) ||
-      (f.fileName || '').toLowerCase().includes(q) ||
-      (f.filePath || '').toLowerCase().includes(q) ||
-      (f.owner || '').toLowerCase().includes(q)
-    );
-  });
+  
+  const departmentFiles = visibleFiles.filter(
+    f => !selectedBU || (f.buName || f.department) === selectedBU
+  );
 
   const canMoveToProduction = selectedIds.length > 0 &&
     selectedIds.every(id => visibleFiles.find(f => f.id === id)?.status === 'uat_done');
@@ -141,7 +134,7 @@ function App() {
         <main className="app-main">
           <LandingPage
             files={visibleFiles}
-            onSelectBU={bu => { setSelectedBU(bu); setSearchQuery(''); setSelectedIds([]); }}
+            onSelectBU={bu => { setSelectedBU(bu); setSearchQuery(''); setFilterField('department'); setSelectedIds([]); }}
           />
         </main>
       </div>
@@ -155,14 +148,16 @@ function App() {
         onRoleChange={setRole}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        filterField={filterField}                 
+        onFilterFieldChange={setFilterField}       
         onMoveToProduction={() => handleMoveToProduction(selectedIds)}
         canMoveToProduction={canMoveToProduction}
         selectedBU={selectedBU}
-        onBackToLanding={() => { setSelectedBU(null); setSearchQuery(''); setSelectedIds([]); }}
+        onBackToLanding={() => { setSelectedBU(null); setSearchQuery(''); setFilterField('department'); setSelectedIds([]); }}
       />
       <main className="app-main">
         <MergedFileWorkflowTable
-          files={filteredFiles}
+          files={departmentFiles}                 
           role={role}
           selectedIds={selectedIds}
           onSelectChange={setSelectedIds}
@@ -170,7 +165,9 @@ function App() {
           onDeleteFile={handleDeleteFile}
           onMoveToProduction={handleMoveToProduction}
           onAddFiles={handleAddFiles}
-          currentDepartment={selectedBU}  
+          currentDepartment={selectedBU}
+          searchQuery={searchQuery}                
+          filterField={filterField}               
         />
       </main>
     </div>
