@@ -1,3 +1,4 @@
+# filehandler.py 
 """
 File handling service for Excel and CSV file uploads.
 """
@@ -17,16 +18,16 @@ class FileHandler:
     @staticmethod
     def build_subfolder(bu: str, workflow_file_path: str, upload_type: str = "") -> str:
         """
-        Build a structured subfolder path: {BU}/{file_path_segments}
-        Example: EU_Marketing/data/eu_marketing/campaign_review
+        Build a structured subfolder path: {BU}/{upload_type}/{file_path_segments}
+        Example: EU_Marketing/pyspark/data/eu_marketing/campaign_review_q1
 
-        Both PySpark and SAS outputs are saved into this same folder.
-        The upload_type argument is still accepted (so the existing upload
-        route keeps working) but is no longer added to the path.
+        Order is: BU first, then pyspark|sas, then the file path segments.
         """
         parts = []
         if bu:
             parts.append(FileHandler._sanitize_segment(bu))
+        if upload_type in ("pyspark", "sas"):
+            parts.append(upload_type)
         if workflow_file_path:
             for seg in re.split(r'[/\\]', workflow_file_path):
                 clean = FileHandler._sanitize_segment(seg)
@@ -46,7 +47,10 @@ class FileHandler:
     def process(file_bytes: bytes, filename: str, upload_folder: str, subfolder: str = ""):
         """
         Save raw bytes to disk under upload_folder/subfolder/.
-        Reuses existing file if the same hash is found anywhere under upload_folder.
+
+        Duplicate detection is scoped to THIS file's own target folder only
+        ({BU}/{type}/{Filepath}). It will NOT reuse an identical file that
+        happens to live under a different BU, type, or dataset.
 
         Returns:
             tuple: (file_info dict, parsed_data dict)
@@ -58,8 +62,8 @@ class FileHandler:
         target_folder = os.path.join(upload_folder, subfolder) if subfolder else upload_folder
         os.makedirs(target_folder, exist_ok=True)
 
-        # Check recursively across all BU/filepath subfolders for duplicate hash
-        existing_path = FileHandler._find_by_hash(upload_folder, file_hash)
+        # Look for the same bytes ONLY inside this file's own target folder.
+        existing_path = FileHandler._find_by_hash(target_folder, file_hash)
         if existing_path:
             parsed_data = FileHandler.parse_file(existing_path, ext)
             file_info = {
@@ -96,14 +100,14 @@ class FileHandler:
         return file_info, parsed_data
 
     @staticmethod
-    def _find_by_hash(upload_folder: str, file_hash: str):
+    def _find_by_hash(scan_folder: str, file_hash: str):
         """
-        Recursively scan upload_folder (including BU/filepath subfolders)
-        for a .hash sidecar matching the given hash.
+        Scan ONLY the given folder (this file's own {BU}/{type}/{Filepath}
+        target) for a .hash sidecar matching the given hash.
         Returns the file path if found, else None.
         """
         try:
-            for root, _dirs, files in os.walk(upload_folder):
+            for root, _dirs, files in os.walk(scan_folder):
                 for fname in files:
                     if not fname.endswith(".hash"):
                         continue

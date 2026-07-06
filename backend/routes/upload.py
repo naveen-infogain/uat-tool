@@ -1,6 +1,7 @@
 """
 File upload routes with database persistence.
 """
+import os
 import hashlib
 import uuid
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException, Depends
@@ -45,9 +46,13 @@ async def upload_file(
             )
 
         file_hash = hashlib.sha256(file_bytes).hexdigest()
-        existing_upload = db.query(UploadedFile).filter(UploadedFile.file_hash == file_hash).first()
+        # Scope the duplicate check by user_type so the SAME file can exist
+        # once as a developer/GCP upload and once as a client/SAS upload.
+        existing_upload = db.query(UploadedFile).filter(
+            UploadedFile.file_hash == file_hash,
+            UploadedFile.user_type == user_type,
+        ).first()
         if existing_upload:
-            existing_metadata = existing_upload.file_metadata or {}
             return {
                 "success": True,
                 "upload_id": existing_upload.id,
@@ -58,51 +63,63 @@ async def upload_file(
                     "uploaded_at": existing_upload.upload_timestamp.isoformat() if existing_upload.upload_timestamp else None,
                 },
                 "data_summary": {
-                    "row_count": existing_metadata.get("row_count", 0),
-                    "column_count": existing_metadata.get("column_count", 0),
-                    "columns": existing_metadata.get("headers", []),
+                    "row_count": existing_upload.row_count or 0,
+                    "column_count": existing_upload.column_count or 0,
+                    "columns": existing_upload.headers or [],
                 },
-                "sql_query": existing_metadata.get("sql_query"),
+                "sql_query": existing_upload.sql_query,
                 "duplicate": True,
             }
 
-        # Build structured subfolder: {BU}/{upload_type}
+        # Build structured subfolder: {BU}/{type}/{Filepath}
         subfolder = FileHandler.build_subfolder(bu, workflow_file_path, upload_type)
 
         # Process file — saves to upload_folder/subfolder/
         file_info, parsed_data = FileHandler.process(file_bytes, file.filename, settings.upload_folder, subfolder)
 
-        # Build logical display path for pgAdmin: e.g. express/pyspark/Q1_INVOICES_2024
-        clean_name = FileHandler._sanitize_segment(
-            workflow_file_name.rsplit(".", 1)[0] if "." in workflow_file_name else workflow_file_name
-        ) if workflow_file_name else ""
-        if bu and upload_type and clean_name:
-            logical_path = f"{bu}/{upload_type}/{clean_name}"
+        # Relative stored location and folder
+        if subfolder:
+            stored_path = os.path.join(subfolder, file_info["saved_filename"]).replace("\\", "/")
+            stored_folder = subfolder.replace("\\", "/")
         else:
-            logical_path = file_info["file_path"]  # fallback for uploads without context
+            stored_path = file_info["file_path"].replace("\\", "/")
+            stored_folder = None
 
-        # Store in database
         upload_id = str(uuid.uuid4())
         uploaded_file = UploadedFile(
             id=upload_id,
             file_hash=file_info["file_hash"],
             original_filename=file_info["original_filename"],
             saved_filename=file_info["saved_filename"],
-            file_path=logical_path,          # human-readable path shown in pgAdmin
+            file_path=stored_path,
             file_size=file_info["file_size"],
             file_type=ext,
             user_type=user_type,
+            # ---- broken-out metadata columns ----
+            bu=bu or None,
+            upload_type=upload_type or None,
+            save_path=stored_folder,
+            disk_path=file_info["file_path"],
+            workflow_file_name=workflow_file_name or None,
+            workflow_file_path=workflow_file_path or None,
+            row_count=parsed_data["row_count"],
+            column_count=parsed_data["column_count"],
+            sql_query=sql_query or None,
+            headers=parsed_data["headers"],
+            data=parsed_data["data"],
+            # kept for backward compatibility (comparator reads disk_path here)
             file_metadata={
-                "sql_query": sql_query if sql_query else None,
+                "sql_query": sql_query or None,
                 "row_count": parsed_data["row_count"],
                 "column_count": parsed_data["column_count"],
                 "headers": parsed_data["headers"],
                 "bu": bu or None,
+                "save_path": stored_folder,
                 "workflow_file_name": workflow_file_name or None,
                 "workflow_file_path": workflow_file_path or None,
                 "upload_type": upload_type or None,
-                "disk_path": file_info["file_path"],  # actual disk path for comparator
-            }
+                "disk_path": file_info["file_path"],
+            },
         )
         db.add(uploaded_file)
         db.commit()
@@ -122,7 +139,8 @@ async def upload_file(
                 "column_count": parsed_data["column_count"],
                 "columns": parsed_data["headers"],
             },
-            "sql_query": sql_query if sql_query else None,
+            "stored_path": stored_path,
+            "sql_query": sql_query or None,
         }
 
     except HTTPException:
@@ -138,11 +156,14 @@ async def get_upload(upload_id: str, db: Session = Depends(get_db)):
     if not upload:
         raise HTTPException(status_code=404, detail="Upload not found")
 
-    metadata = upload.file_metadata or {}
     return {
         "success": True,
         "upload_id": upload.id,
         "user_type": upload.user_type,
+        "upload_type": upload.upload_type,
+        "bu": upload.bu,
+        "file_path": upload.file_path,
+        "disk_path": upload.disk_path,
         "file_info": {
             "original_filename": upload.original_filename,
             "file_size": upload.file_size,
@@ -150,11 +171,43 @@ async def get_upload(upload_id: str, db: Session = Depends(get_db)):
             "uploaded_at": upload.upload_timestamp.isoformat() if upload.upload_timestamp else None,
         },
         "data_summary": {
-            "row_count": metadata.get("row_count", 0),
-            "column_count": metadata.get("column_count", 0),
-            "columns": metadata.get("headers", []),
+            "row_count": upload.row_count or 0,
+            "column_count": upload.column_count or 0,
+            "columns": upload.headers or [],
         },
-        "sql_query": metadata.get("sql_query"),
+        "sql_query": upload.sql_query,
+    }
+
+
+@router.get("/upload/{upload_id}/data")
+async def get_upload_data(upload_id: str, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    Return the ACTUAL rows of an uploaded file by reading it from disk.
+    The database stores metadata + a disk_path pointer; the real data is
+    fetched from the file itself here.
+    """
+    upload = db.query(UploadedFile).filter(UploadedFile.id == upload_id).first()
+    if not upload:
+        raise HTTPException(status_code=404, detail="Upload not found")
+
+    disk_path = upload.disk_path or (upload.file_metadata or {}).get("disk_path") or upload.file_path
+    if not disk_path or not os.path.exists(disk_path):
+        raise HTTPException(status_code=404, detail=f"File not found on disk: {disk_path}")
+
+    ext = (upload.file_type or disk_path.rsplit(".", 1)[-1]).lower()
+    parsed = FileHandler.parse_file(disk_path, ext)
+    rows = parsed["data"]
+
+    return {
+        "success": True,
+        "upload_id": upload_id,
+        "original_filename": upload.original_filename,
+        "disk_path": disk_path,
+        "headers": parsed["headers"],
+        "row_count": parsed["row_count"],
+        "column_count": parsed["column_count"],
+        "rows": rows[:limit],
+        "truncated": len(rows) > limit,
     }
 
 
@@ -166,10 +219,12 @@ async def list_uploads(db: Session = Depends(get_db)):
             {
                 "upload_id": upload.id,
                 "user_type": upload.user_type,
+                "upload_type": upload.upload_type,
+                "bu": upload.bu,
                 "filename": upload.original_filename,
+                "file_path": upload.file_path,
                 "uploaded_at": upload.upload_timestamp.isoformat() if upload.upload_timestamp else None,
             }
             for upload in uploads
         ]
     }
-

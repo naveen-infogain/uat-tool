@@ -79,7 +79,7 @@ const StatusStepFlow = ({ status }) => {
     <div className="step-flow">
       <div className="step-item">
         <StepIcon state={s.py} />
-        <span className="step-label">PySpark</span>
+        <span className="step-label">GCP</span>
       </div>
       <span className="step-connector" />
       <div className="step-item">
