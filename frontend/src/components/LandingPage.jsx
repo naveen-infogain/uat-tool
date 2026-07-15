@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import { ALLOWED_BUSINESS_UNITS, ALLOWED_BUSINESS_UNIT_SET } from '../constants/businessUnits';
 import './LandingPage.css';
 
+const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
 const STATUS_ORDER = [
   'not_started',
   'pyspark_uploaded',
@@ -43,18 +45,29 @@ function deriveBUStats(files) {
     else                                    s.inProgress += 1;
   }
 
-  return ALLOWED_BUSINESS_UNITS.map(name => map[name]);
+  return ALLOWED_BUSINESS_UNITS.map(name => {
+    const s = map[name];
+    s.completionPct = s.total ? Math.round(((s.done + s.production) / s.total) * 100) : 0;
+    return s;
+  });
 }
 
-function GlobalStats({ files }) {
+function computeGlobalStats(files) {
   const total      = files.length;
   const done       = files.filter(f => f.status === 'uat_done').length;
   const issues     = files.filter(f => f.status === 'issue_reported').length;
   const production = files.filter(f => f.status === 'production').length;
+  const notStarted = files.filter(f => f.status === 'not_started').length;
   const inProgress = files.filter(f =>
     !['not_started', 'uat_done', 'issue_reported', 'production', 'not_applicable'].includes(f.status)
   ).length;
   const completionPct = total ? Math.round(((done + production) / total) * 100) : 0;
+
+  return { total, done, issues, production, notStarted, inProgress, completionPct };
+}
+
+function GlobalStats({ stats }) {
+  const { total, done, issues, production, inProgress, completionPct } = stats;
 
   return (
     <div className="global-stats">
@@ -87,9 +100,7 @@ function GlobalStats({ files }) {
 }
 
 function BUCard({ bu, onClick }) {
-  const completionPct = bu.total
-    ? Math.round(((bu.done + bu.production) / bu.total) * 100)
-    : 0;
+  const completionPct = bu.completionPct;
 
   const progressColor =
     completionPct >= 80 ? '#22c55e' :
@@ -144,6 +155,45 @@ function BUCard({ bu, onClick }) {
 
 export function LandingPage({ files, onSelectBU }) {
   const buList = useMemo(() => deriveBUStats(files), [files]);
+  const globalStats = useMemo(() => computeGlobalStats(files), [files]);
+
+  const handleDownloadExcel = async () => {
+    const payload = {
+      overall: globalStats,
+      businessUnits: buList.map(bu => ({
+        name: bu.name,
+        total: bu.total,
+        inProgress: bu.inProgress,
+        done: bu.done,
+        issues: bu.issues,
+        production: bu.production,
+        notStarted: bu.notStarted,
+        completionPct: bu.completionPct,
+      })),
+    };
+
+    try {
+      const resp = await fetch(`${API}/export/dashboard/excel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) throw new Error('Export request failed');
+
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'gcp_sas_compare_dashboard_summary.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download dashboard report:', err);
+      alert('Failed to download the report. Please try again.');
+    }
+  };
 
   return (
     <div className="landing">
@@ -154,8 +204,16 @@ export function LandingPage({ files, onSelectBU }) {
 
       <div className="landing-body">
         <section className="section-block">
-          <h2 className="section-heading">Overall Statistics</h2>
-          <GlobalStats files={files} />
+          <div className="section-header-row">
+            <h2 className="section-heading">Overall Statistics</h2>
+            <button className="btn-download-report" onClick={handleDownloadExcel}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 3v12" /><polyline points="7 10 12 15 17 10" /><path d="M4 19h16" />
+              </svg>
+              Download Excel Report
+            </button>
+          </div>
+          <GlobalStats stats={globalStats} />
         </section>
 
         <section className="section-block">

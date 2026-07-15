@@ -1,8 +1,11 @@
 import React from 'react';
 import './DeviationModal.css';
 
+const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
 export const DeviationModal = ({ file, onConfirm, onReportIssue, onClose }) => {
   const result = file?.comparisonResult;
+  const comparisonId = file?.comparisonId;
 
   if (!result) {
     return (
@@ -70,6 +73,25 @@ export const DeviationModal = ({ file, onConfirm, onReportIssue, onClose }) => {
 
         <h2 className="modal-title">Review Validation Results</h2>
         <p className="modal-subtitle"><strong>{file.fileName}</strong> — Review the comparison results below. Approve to mark UAT done, or Reject to report an issue back to the developer.</p>
+
+        {comparisonId && (
+          <div className="download-actions">
+            <a
+              className="btn-download"
+              href={`${API}/export/${comparisonId}/excel`}
+              download
+            >
+              Download Excel
+            </a>
+            <a
+              className="btn-download"
+              href={`${API}/export/${comparisonId}/pdf`}
+              download
+            >
+              Download PDF
+            </a>
+          </div>
+        )}
 
         {/* Summary */}
         <h3 className="section-heading">Summary</h3>

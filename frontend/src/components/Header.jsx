@@ -59,6 +59,12 @@ export const Header = ({
           >
             Business User
           </button>
+          <button
+            className={`role-btn ${role === 'admin' ? 'active' : ''}`}
+            onClick={() => onRoleChange('admin')}
+          >
+            Admin
+          </button>
         </div>
       </header>
 
