@@ -5,6 +5,7 @@ import { SASQueriesModal } from './SASQueriesModal';
 import { IssueModal } from './IssueModal';
 import { IssueViewModal } from './IssueViewModal';
 import { DeviationModal } from './DeviationModal';
+import { API, apiFetch } from '../services/http';
 import './MergedFileWorkflowTable.css';
 
 const STATUS_LABELS = {
@@ -250,7 +251,7 @@ export const MergedFileWorkflowTable = ({
     }
     setComparing(true);
     try {
-      const response = await fetch('http://localhost:8000/api/compare', {
+      const response = await apiFetch(`${API}/compare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -289,8 +290,7 @@ export const MergedFileWorkflowTable = ({
     }
     if (file.pysparkUploadId) {
       try {
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-        const resp = await fetch(`${API_BASE}/upload/${file.pysparkUploadId}`);
+        const resp = await apiFetch(`${API}/upload/${file.pysparkUploadId}`);
         if (resp.ok) {
           const data = await resp.json();
           const sqlQuery = data.sql_query || null;
@@ -379,6 +379,8 @@ export const MergedFileWorkflowTable = ({
               <th>FILE NAME</th>
               <th>FILE PATH</th>
               <th>OWNER</th>
+              <th>DEVELOPER</th>
+              <th>BUSINESS USER</th>
               <th>STATUS</th>
               <th>STATE</th>
               <th>ACTION</th>
@@ -388,7 +390,7 @@ export const MergedFileWorkflowTable = ({
           <tbody>
             {filteredFiles.length === 0 && (
               <tr>
-                <td colSpan={role === 'developer' ? 9 : 8} className="empty-row">
+                <td colSpan={role === 'developer' ? 11 : 10} className="empty-row">
                   {files.length === 0
                     ? `No files found. ${role === 'admin' ? 'Use "Upload File List" to add files.' : 'No files available for UAT.'}`
                     : 'No files match your search.'}
@@ -411,6 +413,8 @@ export const MergedFileWorkflowTable = ({
                 <td className="filename-cell" title={file.fileName}>{file.fileName}</td>
                 <td className="filepath-cell" title={file.filePath}>{file.filePath || '—'}</td>
                 <td className="owner-cell" title={file.owner}>{file.owner || '—'}</td>
+                <td className="assignee-cell" title={file.developerEmail}>{file.developerEmail || '—'}</td>
+                <td className="assignee-cell" title={file.businessUserEmail}>{file.businessUserEmail || '—'}</td>
                 <td className="status-td"><StatusStepFlow status={file.status} /></td>
                 <td className="state-cell">
                   <span className={`state-badge state-${getStateKey(file.status, role)}`}>

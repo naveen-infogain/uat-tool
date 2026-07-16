@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import { API, apiFetch } from '../services/http';
 import './UploadFileListModal.css';
-
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 const COLUMN_MAP = {
   buName:       ['bu names', 'bu name', 'bu', 'business unit', 'businessunit', 'business_unit'],
@@ -102,7 +101,7 @@ export const UploadFileListModal = ({ onAdd, onCancel, departmentFilter }) => {
         setPreview(filtered.map(r => ({ ...r, rowStatus: 'checking' })));
 
         try {
-          const resp = await fetch(`${API}/workflow-files/check`, {
+          const resp = await apiFetch(`${API}/workflow-files/check`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(filtered.map(r => ({

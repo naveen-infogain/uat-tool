@@ -3,7 +3,7 @@ FastAPI main application for the UAT Data Comparison Tool.
 """
 import os
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from db import init_db, SessionLocal
@@ -13,6 +13,8 @@ from routes.upload import router as upload_router
 from routes.compare import router as compare_router
 from routes.export import router as export_router
 from routes.workflow import router as workflow_router
+from routes.auth import router as auth_router
+from services.auth import get_current_user, ensure_seed_admin
 
 logging.basicConfig(
     level=logging.INFO,
@@ -89,11 +91,23 @@ def startup():
     logger.info(f"✓ Upload folder: {settings.upload_folder}")
     _cleanup_duplicate_workflow_files()
 
+    db = SessionLocal()
+    try:
+        ensure_seed_admin(db)
+    finally:
+        db.close()
 
-app.include_router(upload_router, prefix="/api")
-app.include_router(compare_router, prefix="/api")
-app.include_router(export_router, prefix="/api")
-app.include_router(workflow_router, prefix="/api")
+
+app.include_router(auth_router, prefix="/api")
+
+# Every route below requires a valid login (Authorization: Bearer <access_token>).
+# Role-specific rules (e.g. admin-only "upload file list") are applied per-endpoint
+# on top of this baseline — see routes/workflow.py.
+_authenticated = [Depends(get_current_user)]
+app.include_router(upload_router, prefix="/api", dependencies=_authenticated)
+app.include_router(compare_router, prefix="/api", dependencies=_authenticated)
+app.include_router(export_router, prefix="/api", dependencies=_authenticated)
+app.include_router(workflow_router, prefix="/api", dependencies=_authenticated)
 
 
 @app.get("/api/health")

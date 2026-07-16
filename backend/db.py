@@ -62,3 +62,11 @@ def _ensure_workflow_schema():
             connection.execute(
                 text("ALTER TABLE workflow_files ADD COLUMN bu_name VARCHAR(100)")
             )
+        if "developer_email" not in columns:
+            connection.execute(
+                text("ALTER TABLE workflow_files ADD COLUMN developer_email VARCHAR(255)")
+            )
+        if "business_user_email" not in columns:
+            connection.execute(
+                text("ALTER TABLE workflow_files ADD COLUMN business_user_email VARCHAR(255)")
+            )

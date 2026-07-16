@@ -8,6 +8,19 @@ import enum
 from db import Base
 
 
+class User(Base):
+    """A login account for the UAT tool."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    full_name = Column(String(255), nullable=True)
+    role = Column(String(20), nullable=False)  # developer, business_user, admin
+    is_active = Column(Integer, default=1)  # 0=No, 1=Yes
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class FileStatus(str, enum.Enum):
     """File status enum."""
     not_started = "not_started"
@@ -74,6 +87,11 @@ class WorkflowFile(Base):
     # References to uploaded files
     pyspark_upload_id = Column(String(36), nullable=True)  # FK to UploadedFile
     sas_upload_id = Column(String(36), nullable=True)      # FK to UploadedFile
+
+    # Who most recently uploaded the GCP/SAS output — set server-side from the
+    # authenticated user, not client-supplied (see routes/workflow.py).
+    developer_email = Column(String(255), nullable=True)
+    business_user_email = Column(String(255), nullable=True)
 
     issue_comment = Column(Text, nullable=True)
     comparison_id = Column(String(36), nullable=True)  # FK to Comparison

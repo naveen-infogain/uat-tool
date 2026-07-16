@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import { ALLOWED_BUSINESS_UNITS, ALLOWED_BUSINESS_UNIT_SET } from '../constants/businessUnits';
+import { API, apiFetch } from '../services/http';
 import './LandingPage.css';
-
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 const STATUS_ORDER = [
   'not_started',
@@ -173,7 +172,7 @@ export function LandingPage({ files, onSelectBU }) {
     };
 
     try {
-      const resp = await fetch(`${API}/export/dashboard/excel`, {
+      const resp = await apiFetch(`${API}/export/dashboard/excel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { API, apiFetch } from '../services/http';
 import './DeviationModal.css';
-
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 export const DeviationModal = ({ file, onConfirm, onReportIssue, onClose }) => {
   const result = file?.comparisonResult;
   const comparisonId = file?.comparisonId;
+  const [downloading, setDownloading] = useState(null);
+
+  const handleDownload = async (format) => {
+    setDownloading(format);
+    try {
+      const resp = await apiFetch(`${API}/export/${comparisonId}/${format}`);
+      if (!resp.ok) throw new Error('Download failed');
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `comparison_${comparisonId}.${format === 'excel' ? 'xlsx' : format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(`Failed to download ${format}:`, err);
+      alert('Failed to download the report. Please try again.');
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   if (!result) {
     return (
@@ -76,20 +98,20 @@ export const DeviationModal = ({ file, onConfirm, onReportIssue, onClose }) => {
 
         {comparisonId && (
           <div className="download-actions">
-            <a
+            <button
               className="btn-download"
-              href={`${API}/export/${comparisonId}/excel`}
-              download
+              onClick={() => handleDownload('excel')}
+              disabled={downloading === 'excel'}
             >
-              Download Excel
-            </a>
-            <a
+              {downloading === 'excel' ? 'Downloading…' : 'Download Excel'}
+            </button>
+            <button
               className="btn-download"
-              href={`${API}/export/${comparisonId}/pdf`}
-              download
+              onClick={() => handleDownload('pdf')}
+              disabled={downloading === 'pdf'}
             >
-              Download PDF
-            </a>
+              {downloading === 'pdf' ? 'Downloading…' : 'Download PDF'}
+            </button>
           </div>
         )}
 

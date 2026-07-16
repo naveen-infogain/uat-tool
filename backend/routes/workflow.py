@@ -1,12 +1,14 @@
 """
 Workflow file routes — persist the UAT file list to the database.
 """
+from datetime import datetime
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 from db import get_db
-from models import WorkflowFile
+from models import WorkflowFile, User
+from services.auth import get_current_user, require_roles
 from services.notification import (
     notify_uat_ready,
     notify_issue_reported,
@@ -30,6 +32,8 @@ def _to_dict(wf: WorkflowFile) -> dict:
         "status": wf.status,
         "pysparkUploadId": wf.pyspark_upload_id,
         "sasUploadId": wf.sas_upload_id,
+        "developerEmail": wf.developer_email or "",
+        "businessUserEmail": wf.business_user_email or "",
         "issueComment": wf.issue_comment,
         "comparisonId": wf.comparison_id,
         "pysparkFile": extras.get("pysparkFile"),
@@ -99,6 +103,7 @@ def add_workflow_files(
     rows: List[WorkflowFileCreate],
     db: Session = Depends(get_db),
     department_filter: Optional[str] = Query(default=None),  # ✅ new
+    _admin: User = Depends(require_roles("admin")),
 ):
     """
     Bulk-insert workflow file rows.
@@ -157,6 +162,7 @@ def update_workflow_file(
     updates: WorkflowFileUpdate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     wf = db.query(WorkflowFile).filter(WorkflowFile.id == file_id).first()
     if not wf:
@@ -166,6 +172,15 @@ def update_workflow_file(
 
     if updates.status is not None:
         wf.status = updates.status
+        # Attribute the upload to whoever is actually logged in — derived from
+        # the JWT, never client-supplied, so it can't be spoofed.
+        if updates.status == "pyspark_uploaded" and current_user.role in ("developer", "admin"):
+            wf.developer_email = current_user.email
+        elif updates.status == "sas_uploaded" and current_user.role in ("business_user", "admin"):
+            wf.business_user_email = current_user.email
+        elif updates.status == "not_started":
+            wf.developer_email = None
+            wf.business_user_email = None
     if updates.pysparkUploadId is not None:
         wf.pyspark_upload_id = updates.pysparkUploadId
     if updates.sasUploadId is not None:
@@ -196,13 +211,17 @@ def update_workflow_file(
         file_name = wf.file_name
         department = wf.bu_name or wf.department
         if new_status == "uat_ready":
-            background_tasks.add_task(notify_uat_ready, file_name, department)
+            background_tasks.add_task(notify_uat_ready, file_name, department, wf.developer_email)
         elif new_status == "issue_reported":
             background_tasks.add_task(
-                notify_issue_reported, file_name, department, wf.issue_comment
+                notify_issue_reported, file_name, department, wf.issue_comment, wf.developer_email
             )
         elif new_status == "uat_done":
-            background_tasks.add_task(notify_uat_approved, file_name, department)
+            completed_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+            background_tasks.add_task(
+                notify_uat_approved,
+                file_name, department, completed_at, wf.developer_email, wf.business_user_email,
+            )
 
     return _to_dict(wf)
 

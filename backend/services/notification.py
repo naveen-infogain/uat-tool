@@ -583,45 +583,53 @@ def _email_layout(
 
 # ── High-level notification helpers ──────────────────────────────────────────
 
-def notify_uat_ready(file_name: str, department: str) -> None:
-    """Notify business user that a file is ready for UAT."""
-    subject = f"[UAT Tool] {file_name} is ready for UAT review"
+def notify_uat_ready(file_name: str, department: str, developer_email: Optional[str] = None) -> None:
+    """Confirm to the developer that their file is now marked ready for UAT.
+
+    business_user_email isn't populated yet at this point (no one has
+    uploaded SAS output for this file), so there's no per-file business
+    contact to notify here — this is a confirmation back to the developer
+    who just marked it ready, not an action-required email to anyone else.
+    """
+    recipient = developer_email or settings.developer_email
+    subject = f"[UAT Tool] {file_name} marked ready for UAT"
     html = _email_layout(
         header_color="#2563eb",
-        badge_text="Action Required",
+        badge_text="Marked Ready",
         badge_color="#1d4ed8",
-        title=f"{file_name} is ready for UAT review",
+        title=f"{file_name} is now awaiting UAT",
         body_rows=[
             "Hello,",
-            f"The developer has uploaded <strong>{file_name}</strong> "
+            f"You've marked <strong>{file_name}</strong> "
             f"<span style='background:#eff6ff;color:#1d4ed8;padding:2px 8px;"
             f"border-radius:4px;font-size:13px;font-weight:600;'>{department}</span> "
-            "and marked it <strong>ready for UAT</strong>.",
-            "Please follow the steps below:",
-            "<ol style='margin:4px 0 12px 0;padding-left:20px;color:#374151;"
-            "font-size:15px;line-height:1.8;'>"
-            "<li>Log in to the UAT Tool</li>"
-            "<li>Open the file and click <strong>View SQL</strong></li>"
-            "<li>Run that SQL in your SAS environment</li>"
-            "<li>Upload the SAS output and click <strong>Run Validation</strong></li>"
-            "<li>Review deviations and <strong>Approve</strong> or <strong>Report Issue</strong></li>"
-            "</ol>",
+            "as <strong>ready for UAT</strong>.",
+            "It's now waiting on the business user to run validation. "
+            "You'll get another email if an issue is reported, or once UAT is approved.",
         ],
-        cta_text="Open UAT Tool →",
+        cta_text="View in UAT Tool →",
         cta_color="#2563eb",
         app_url=settings.app_url,
     )
     teams_text = (
-        f"**{file_name}** ({department}) has been uploaded by the developer "
-        "and is now **ready for UAT review**. Please log in, copy the SQL, "
-        "run it in SAS, upload the output, and run validation."
+        f"**{file_name}** ({department}) has been marked **ready for UAT** "
+        "and is now awaiting business user review."
     )
-    send_email(settings.business_user_email, subject, html)
-    send_teams_message("UAT Ready — Action Required", teams_text, color="0076D7")
+    send_email(recipient, subject, html)
+    send_teams_message("UAT Ready — Awaiting Business User", teams_text, color="0076D7")
 
 
-def notify_issue_reported(file_name: str, department: str, comment: Optional[str]) -> None:
-    """Notify developer that a business user reported an issue."""
+def notify_issue_reported(
+    file_name: str,
+    department: str,
+    comment: Optional[str],
+    developer_email: Optional[str] = None,
+) -> None:
+    """Notify the file's assigned developer that a business user reported an issue.
+
+    Falls back to the static DEVELOPER_EMAIL config when no developer has
+    uploaded GCP output for this file yet (so developer_email is unset).
+    """
     subject = f"[UAT Tool] Issue reported on {file_name}"
     comment_row = (
         f"<strong>Business user comment:</strong><br/>"
@@ -656,14 +664,29 @@ def notify_issue_reported(file_name: str, department: str, comment: Optional[str
         + (f"Comment: _{comment}_. " if comment else "")
         + "Please review the deviations and re-upload the PySpark output."
     )
-    send_email(settings.developer_email, subject, html)
+    send_email(developer_email or settings.developer_email, subject, html)
     send_teams_message("Issue Reported — Developer Action Required", teams_text, color="D83B01")
 
 
-def notify_uat_approved(file_name: str, department: str) -> None:
-    """Notify developer that UAT was approved."""
-    subject = f"[UAT Tool] UAT Approved — {file_name}"
-    html = _email_layout(
+def notify_uat_approved(
+    file_name: str,
+    department: str,
+    completed_at: Optional[str] = None,
+    developer_email: Optional[str] = None,
+    business_user_email: Optional[str] = None,
+) -> None:
+    """
+    UAT was approved: notify the developer (as before, now with a timestamp)
+    and send the business user a completion receipt for their own records.
+
+    developer_email/business_user_email are the per-file assignees (whoever
+    uploaded GCP/SAS output for this file); falls back to the static config
+    addresses when a file has no assignee yet.
+    """
+    when_row = f"Completed at <strong>{completed_at}</strong>." if completed_at else None
+
+    dev_subject = f"[UAT Tool] UAT Approved — {file_name}"
+    dev_html = _email_layout(
         header_color="#16a34a",
         badge_text="UAT Approved ✓",
         badge_color="#15803d",
@@ -675,6 +698,7 @@ def notify_uat_approved(file_name: str, department: str) -> None:
             f"<span style='background:#f0fdf4;color:#15803d;padding:2px 8px;"
             f"border-radius:4px;font-size:13px;font-weight:600;'>{department}</span>. "
             "Great work!",
+            *([when_row] if when_row else []),
             "You can now take one of the following actions in the UAT Tool:",
             "<ul style='margin:4px 0 12px 0;padding-left:20px;color:#374151;"
             "font-size:15px;line-height:1.8;'>"
@@ -687,8 +711,34 @@ def notify_uat_approved(file_name: str, department: str) -> None:
         app_url=settings.app_url,
     )
     teams_text = (
-        f"UAT has been **approved ✓** for **{file_name}** ({department}). "
-        "The developer can now move this to production or discard the record."
+        f"UAT has been **approved ✓** for **{file_name}** ({department})"
+        + (f" at {completed_at}" if completed_at else "")
+        + ". The developer can now move this to production or discard the record."
     )
-    send_email(settings.developer_email, subject, html)
+    send_email(developer_email or settings.developer_email, dev_subject, dev_html)
     send_teams_message("UAT Approved ✓", teams_text, color="107C10")
+
+    # Confirmation receipt back to the business user who approved it.
+    biz_recipient = business_user_email or settings.business_user_email
+    if biz_recipient:
+        biz_subject = f"[UAT Tool] Your UAT approval for {file_name} is recorded"
+        biz_html = _email_layout(
+            header_color="#16a34a",
+            badge_text="Approval Recorded",
+            badge_color="#15803d",
+            title=f"Your approval for {file_name} is recorded",
+            body_rows=[
+                "Hello,",
+                f"This confirms your <strong>UAT approval</strong> for "
+                f"<strong>{file_name}</strong> "
+                f"<span style='background:#f0fdf4;color:#15803d;padding:2px 8px;"
+                f"border-radius:4px;font-size:13px;font-weight:600;'>{department}</span> "
+                "has been recorded.",
+                *([when_row] if when_row else []),
+                "No further action is needed from you on this file.",
+            ],
+            cta_text="Open UAT Tool →",
+            cta_color="#16a34a",
+            app_url=settings.app_url,
+        )
+        send_email(biz_recipient, biz_subject, biz_html)

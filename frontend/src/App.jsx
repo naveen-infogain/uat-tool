@@ -2,38 +2,87 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { MergedFileWorkflowTable } from './components/MergedFileWorkflowTable';
 import { LandingPage } from './components/LandingPage';
+import { Login } from './components/Login';
 import { ALLOWED_BUSINESS_UNIT_SET } from './constants/businessUnits';
+import { API, apiFetch, setAccessToken, setUnauthorizedHandler, refreshAccessToken } from './services/http';
 import './App.css';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-
 function App() {
-  const [role, setRole] = useState('developer');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterField, setFilterField] = useState('department'); 
+  const [filterField, setFilterField] = useState('department');
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedBU, setSelectedBU] = useState(null);
+
+  const role = currentUser?.role;
+
+  const resetToLoggedOut = useCallback(() => {
+    setCurrentUser(null);
+    setFiles([]);
+    setSelectedBU(null);
+    setSelectedIds([]);
+    setSearchQuery('');
+    setFilterField('department');
+  }, []);
+
+  // Silent login on load: if the httpOnly refresh cookie is still valid, mint a
+  // fresh access token without showing the login screen.
+  useEffect(() => {
+    setUnauthorizedHandler(resetToLoggedOut);
+    (async () => {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        setCurrentUser(refreshed.user);
+      }
+      setAuthLoading(false);
+    })();
+  }, [resetToLoggedOut]);
+
+  const handleLoggedIn = (user) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await apiFetch(`${API}/auth/logout`, { method: 'POST' });
+    } catch (err) {
+      console.error('Logout request failed:', err);
+    }
+    setAccessToken(null);
+    resetToLoggedOut();
+  };
 
   const visibleFiles = files.filter(f => ALLOWED_BUSINESS_UNIT_SET.has(f.buName || f.department || ''));
 
   useEffect(() => {
-    fetch(`${API}/workflow-files`)
+    if (!currentUser) return;
+    setLoading(true);
+    apiFetch(`${API}/workflow-files`)
       .then(r => r.json())
       .then(data => setFiles(data.files || []))
       .catch(err => console.error('Failed to load files:', err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [currentUser]);
 
   const handleUpdateFile = useCallback(async (id, updates) => {
     setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
     try {
-      await fetch(`${API}/workflow-files/${id}`, {
+      const resp = await apiFetch(`${API}/workflow-files/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
+      if (resp.ok) {
+        // Reconcile with the server's response — it may include fields the
+        // client never sent (e.g. developerEmail/businessUserEmail, derived
+        // server-side from the logged-in user, not the optimistic `updates`).
+        const updated = await resp.json();
+        setFiles(prev => prev.map(f => f.id === id ? { ...f, ...updated } : f));
+      }
     } catch (err) {
       console.error('Failed to persist file update:', err);
     }
@@ -55,7 +104,7 @@ function App() {
         ? `${API}/workflow-files?department_filter=${encodeURIComponent(departmentFilter)}`
         : `${API}/workflow-files`;
 
-      const resp = await fetch(url, {
+      const resp = await apiFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -85,7 +134,7 @@ function App() {
     setSelectedIds(prev => prev.filter(id => !toMove.includes(id)));
     await Promise.all(
       toMove.map(id =>
-        fetch(`${API}/workflow-files/${id}`, {
+        apiFetch(`${API}/workflow-files/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'production' }),
@@ -97,16 +146,30 @@ function App() {
   const handleDeleteFile = useCallback(async (id) => {
     setFiles(prev => prev.filter(f => f.id !== id));
     setSelectedIds(prev => prev.filter(x => x !== id));
-    await fetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error);
+    await apiFetch(`${API}/workflow-files/${id}`, { method: 'DELETE' }).catch(console.error);
   }, []);
 
-  
+
   const departmentFiles = visibleFiles.filter(
     f => !selectedBU || (f.buName || f.department) === selectedBU
   );
 
   const canMoveToProduction = selectedIds.length > 0 &&
     selectedIds.every(id => visibleFiles.find(f => f.id === id)?.status === 'uat_done');
+
+  if (authLoading) {
+    return (
+      <div className="app">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#64748b', fontSize: 15 }}>
+          Loading…
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Login onLoggedIn={handleLoggedIn} />;
+  }
 
   if (loading) {
     return (
@@ -122,8 +185,8 @@ function App() {
     return (
       <div className="app">
         <Header
-          role={role}
-          onRoleChange={setRole}
+          currentUser={currentUser}
+          onLogout={handleLogout}
           searchQuery=""
           onSearchChange={() => {}}
           onMoveToProduction={null}
@@ -144,12 +207,12 @@ function App() {
   return (
     <div className="app">
       <Header
-        role={role}
-        onRoleChange={setRole}
+        currentUser={currentUser}
+        onLogout={handleLogout}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        filterField={filterField}                 
-        onFilterFieldChange={setFilterField}       
+        filterField={filterField}
+        onFilterFieldChange={setFilterField}
         onMoveToProduction={() => handleMoveToProduction(selectedIds)}
         canMoveToProduction={canMoveToProduction}
         selectedBU={selectedBU}
@@ -157,7 +220,7 @@ function App() {
       />
       <main className="app-main">
         <MergedFileWorkflowTable
-          files={departmentFiles}                 
+          files={departmentFiles}
           role={role}
           selectedIds={selectedIds}
           onSelectChange={setSelectedIds}
@@ -166,8 +229,8 @@ function App() {
           onMoveToProduction={handleMoveToProduction}
           onAddFiles={handleAddFiles}
           currentDepartment={selectedBU}
-          searchQuery={searchQuery}                
-          filterField={filterField}               
+          searchQuery={searchQuery}
+          filterField={filterField}
         />
       </main>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AdminUsers } from './AdminUsers';
 import './Header.css';
 
 const FILTER_OPTIONS = [
@@ -8,20 +9,28 @@ const FILTER_OPTIONS = [
   { value: 'status',     label: 'State' },
 ];
 
+const ROLE_LABELS = {
+  developer: 'Developer',
+  business_user: 'Business User',
+  admin: 'Admin',
+};
+
 export const Header = ({
-  role,
-  onRoleChange,
+  currentUser,
+  onLogout,
   searchQuery,
   onSearchChange,
   onMoveToProduction,
   canMoveToProduction,
   selectedBU,
   onBackToLanding,
-  filterField = 'department',   
-  onFilterFieldChange,         
+  filterField = 'department',
+  onFilterFieldChange,
 }) => {
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [showManageUsers, setShowManageUsers] = useState(false);
   const activeFilter = FILTER_OPTIONS.find(o => o.value === filterField) || FILTER_OPTIONS[0];
+  const role = currentUser?.role;
 
   return (
     <div className="header-wrapper">
@@ -45,26 +54,17 @@ export const Header = ({
             )}
           </div>
         </div>
-        <div className="role-switcher">
-          <span className="role-label">Viewing as:</span>
-          <button
-            className={`role-btn ${role === 'developer' ? 'active' : ''}`}
-            onClick={() => onRoleChange('developer')}
-          >
-            Developer
-          </button>
-          <button
-            className={`role-btn ${role === 'business_user' ? 'active' : ''}`}
-            onClick={() => onRoleChange('business_user')}
-          >
-            Business User
-          </button>
-          <button
-            className={`role-btn ${role === 'admin' ? 'active' : ''}`}
-            onClick={() => onRoleChange('admin')}
-          >
-            Admin
-          </button>
+        <div className="user-panel">
+          {role === 'admin' && (
+            <button className="manage-users-btn" onClick={() => setShowManageUsers(true)}>
+              Manage Users
+            </button>
+          )}
+          <div className="user-info">
+            <span className="user-name">{currentUser?.fullName || currentUser?.email}</span>
+            <span className="user-role-badge">{ROLE_LABELS[role] || role}</span>
+          </div>
+          <button className="logout-btn" onClick={onLogout}>Logout</button>
         </div>
       </header>
 
@@ -139,6 +139,8 @@ export const Header = ({
           </div>
         </div>
       )}
+
+      {showManageUsers && <AdminUsers onClose={() => setShowManageUsers(false)} />}
     </div>
   );
 };

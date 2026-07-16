@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { API, apiFetch } from '../services/http';
 import './UploadModal.css';
 
 const MODAL_CONFIG = {
@@ -104,7 +105,7 @@ export const UploadModal = ({ type, file, onUpload, onCancel }) => {
         formData.append('sql_query', sqlQuery);
       }
 
-      const response = await fetch('http://localhost:8000/api/upload', {
+      const response = await apiFetch(`${API}/upload`, {
         method: 'POST',
         body: formData,
       });
